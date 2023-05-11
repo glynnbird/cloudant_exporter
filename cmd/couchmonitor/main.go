@@ -6,20 +6,17 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"regexp"
+	// "regexp"
 	"time"
 
-	// this is wrong
-	//"collectors/replication"
-	// as is
-	// "cloudant.com/prometheus/collectors/replication"
+	"cloudant.com/couchmonitor/internal/monitors"
 
 	// Cloudant Go SDK
 	"github.com/IBM/cloudant-go-sdk/cloudantv1"
 
 	// Prometheus client
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/collectors"
+	// "github.com/prometheus/client_golang/prometheus/collectors"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
@@ -54,7 +51,7 @@ func Collect(service *cloudantv1.CloudantV1) {
 
 // entry point
 func main() {
-	fmt.Println("Hello, World!")
+	log.Println("Hello, World!")
 
 	// connect to Cloudant
 	service, _ := cloudantv1.NewCloudantV1UsingExternalConfig(
@@ -63,16 +60,25 @@ func main() {
 		})
 
 	// collectors - pass in the Cloudant service
+
 	Collect(service)
 
 	// Create a new registry.
 	reg := prometheus.NewRegistry()
 
+	rc := monitors.ReplicationCollector{
+		Reg:      reg,
+		Cldt:     service,
+		Interval: 5 * time.Second,
+		Done:     make(chan bool),
+	}
+	rc.Go()
+
 	// Add Go module build info.
-	reg.MustRegister(collectors.NewBuildInfoCollector())
-	reg.MustRegister(collectors.NewGoCollector(
-		collectors.WithGoCollectorRuntimeMetrics(collectors.GoRuntimeMetricsRule{Matcher: regexp.MustCompile("/.*")}),
-	))
+	// reg.MustRegister(collectors.NewBuildInfoCollector())
+	// reg.MustRegister(collectors.NewGoCollector(
+	// 	collectors.WithGoCollectorRuntimeMetrics(collectors.GoRuntimeMetricsRule{Matcher: regexp.MustCompile("/.*")}),
+	// ))
 
 	// Expose the registered metrics via HTTP.
 	http.Handle("/metrics", promhttp.HandlerFor(
@@ -82,6 +88,6 @@ func main() {
 			EnableOpenMetrics: true,
 		},
 	))
-	fmt.Println("Hello world from new Go Collector!")
+	log.Println("Hello world from new Go Collector!")
 	log.Fatal(http.ListenAndServe(*addr, nil))
 }
