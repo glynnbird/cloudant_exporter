@@ -15,6 +15,7 @@ import (
 	"github.com/IBM/cloudant-go-sdk/cloudantv1"
 )
 
+// poll the Cloudant replication scheduler every 5 seconds
 func Collect(service *cloudantv1.CloudantV1) {
 
 	ticker := time.NewTicker(5000 * time.Millisecond)
@@ -35,8 +36,9 @@ func Collect(service *cloudantv1.CloudantV1) {
 			}
 		}
 	}()
-
 }
+
+// entry point
 func main() {
 	fmt.Println("Hello, World!")
 
@@ -47,7 +49,6 @@ func main() {
 		})
 
 	// collectors
-	// this doesn't work
 	Collect(service)
 
 	// web server to handle Prometheus GET /metrics endpoint
