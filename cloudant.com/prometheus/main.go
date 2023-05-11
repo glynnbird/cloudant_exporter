@@ -2,18 +2,26 @@ package main
 
 import (
 	"encoding/json"
+	"flag"
 	"fmt"
 	"log"
 	"net/http"
+	"regexp"
+	"time"
 
 	// this is wrong
 	//"collectors/replication"
 
 	// Cloudant Go SDK
-	"time"
-
 	"github.com/IBM/cloudant-go-sdk/cloudantv1"
+
+	// Prometheus client
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/collectors"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
+
+var addr = flag.String("listen-address", ":8080", "The address to listen on for HTTP requests.")
 
 // poll the Cloudant replication scheduler every 5 seconds
 func Collect(service *cloudantv1.CloudantV1) {
@@ -51,9 +59,23 @@ func main() {
 	// collectors
 	Collect(service)
 
-	// web server to handle Prometheus GET /metrics endpoint
-	http.HandleFunc("/metrics", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintf(w, "metrics!")
-	})
-	log.Fatal(http.ListenAndServe(":8080", nil))
+	// Create a new registry.
+	reg := prometheus.NewRegistry()
+
+	// Add Go module build info.
+	reg.MustRegister(collectors.NewBuildInfoCollector())
+	reg.MustRegister(collectors.NewGoCollector(
+		collectors.WithGoCollectorRuntimeMetrics(collectors.GoRuntimeMetricsRule{Matcher: regexp.MustCompile("/.*")}),
+	))
+
+	// Expose the registered metrics via HTTP.
+	http.Handle("/metrics", promhttp.HandlerFor(
+		reg,
+		promhttp.HandlerOpts{
+			// Opt into OpenMetrics to support exemplars.
+			EnableOpenMetrics: true,
+		},
+	))
+	fmt.Println("Hello world from new Go Collector!")
+	log.Fatal(http.ListenAndServe(*addr, nil))
 }
