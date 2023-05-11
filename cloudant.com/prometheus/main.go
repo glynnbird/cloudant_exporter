@@ -11,6 +11,8 @@ import (
 
 	// this is wrong
 	//"collectors/replication"
+	// as is
+	// "cloudant.com/prometheus/collectors/replication"
 
 	// Cloudant Go SDK
 	"github.com/IBM/cloudant-go-sdk/cloudantv1"
@@ -26,6 +28,7 @@ var addr = flag.String("listen-address", ":8080", "The address to listen on for 
 // poll the Cloudant replication scheduler every 5 seconds
 func Collect(service *cloudantv1.CloudantV1) {
 
+	// nicked from https://gobyexample.com/tickers
 	ticker := time.NewTicker(5000 * time.Millisecond)
 	done := make(chan bool)
 
@@ -37,9 +40,12 @@ func Collect(service *cloudantv1.CloudantV1) {
 			case t := <-ticker.C:
 				fmt.Println("Polling Cloudant replication", t)
 
+				// fetch scheduler status
 				getSchedulerDocsOptions := service.NewGetSchedulerDocsOptions()
 				schedulerDocsResult, _, _ := service.GetSchedulerDocs(getSchedulerDocsOptions)
 				b, _ := json.MarshalIndent(schedulerDocsResult, "", "  ")
+
+				// to stdout - not plumbed into Prometheus client yet
 				fmt.Println(string(b))
 			}
 		}
@@ -56,7 +62,7 @@ func main() {
 			ServiceName: "CLOUDANT",
 		})
 
-	// collectors
+	// collectors - pass in the Cloudant service
 	Collect(service)
 
 	// Create a new registry.
