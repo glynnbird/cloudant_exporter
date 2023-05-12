@@ -38,8 +38,10 @@ func (rc *ReplicationCollector) Go() {
 				schedulerDocsResult, _, _ := rc.Cldt.GetSchedulerDocs(getSchedulerDocsOptions)
 
 				// to stdout - not plumbed into Prometheus client yet
-				log.Printf("docs written %d", *schedulerDocsResult.Docs[0].Info.DocsWritten)
-				docsProcessed.Set(float64(*schedulerDocsResult.Docs[0].Info.DocsWritten))
+				if len(schedulerDocsResult.Docs) > 0 {
+					log.Printf("docs written %d", *schedulerDocsResult.Docs[0].Info.DocsWritten)
+					docsProcessed.Set(float64(*schedulerDocsResult.Docs[0].Info.DocsWritten))
+				}
 			}
 		}
 	}()
