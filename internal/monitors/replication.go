@@ -42,7 +42,12 @@ func (rc *ReplicationCollector) Go() {
 
 				// fetch scheduler status
 				getSchedulerDocsOptions := rc.Cldt.NewGetSchedulerDocsOptions()
-				schedulerDocsResult, _, _ := rc.Cldt.GetSchedulerDocs(getSchedulerDocsOptions)
+				schedulerDocsResult, _, err := rc.Cldt.GetSchedulerDocs(getSchedulerDocsOptions)
+
+				if err != nil {
+					log.Printf("Error in GetSchedulerDocs: %v", err)
+					continue
+				}
 
 				// to stdout - not plumbed into Prometheus client yet
 				if len(schedulerDocsResult.Docs) > 0 {
