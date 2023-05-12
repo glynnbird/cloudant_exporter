@@ -48,6 +48,13 @@ func main() {
 		Done:     make(chan bool),
 	}
 	rc.Go()
+	tm := monitors.ThroughputMonitor{
+		Reg:      reg,
+		Cldt:     service,
+		Interval: 5 * time.Second,
+		Done:     make(chan bool),
+	}
+	tm.Go()
 
 	// Expose the registered metrics via HTTP.
 	http.Handle("/metrics", promhttp.HandlerFor(
@@ -57,5 +64,6 @@ func main() {
 			EnableOpenMetrics: true,
 		},
 	))
+	http.Handle("/metrics2", promhttp.Handler())
 	log.Fatal(http.ListenAndServe(*addr, nil))
 }
