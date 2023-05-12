@@ -4,6 +4,7 @@ import (
 	"log"
 	"time"
 
+	"cloudant.com/couchmonitor/internal/utils"
 	"github.com/IBM/cloudant-go-sdk/cloudantv1"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
@@ -12,7 +13,7 @@ import (
 type ActiveTasksMonitor struct {
 	Cldt     *cloudantv1.CloudantV1
 	Interval time.Duration
-	Done     chan bool
+	FailBox  *utils.FailBox
 }
 
 var (
@@ -45,40 +46,52 @@ var (
 func (rc *ActiveTasksMonitor) Go() {
 	ticker := time.NewTicker(rc.Interval)
 
-	go func() {
-		for {
-			select {
-			case <-rc.Done:
-				return
-			case t := <-ticker.C:
-				log.Println("Polling Cloudant active tasks", t)
+	for {
+		select {
+		case <-ticker.C:
+			log.Println("ActiveTasksMonitor: tick")
+			err := rc.tick()
 
-				// fetch active tasks
-				getActiveTasksOptions := rc.Cldt.NewGetActiveTasksOptions()
-				activeTaskResult, _, err := rc.Cldt.GetActiveTasks(getActiveTasksOptions)
-
-				if err != nil {
-					log.Printf("ActiveTasksMonitor: Error in GetActiveTasks: %v", err)
-					continue
+			// Exit the monitor if we've not been successful for 20 minutes
+			if err != nil {
+				log.Printf("ActiveTasksMonitor error getting tasks: %v; last success: %s", err, rc.FailBox.LastSuccess())
+				rc.FailBox.Failure()
+				if rc.FailBox.ShouldExit() {
+					log.Printf("ActiveTasksMonitor exiting; >20 minutes since last success at %s", rc.FailBox.LastSuccess())
+					return
 				}
-				for _, d := range activeTaskResult {
-					if *d.Type == "indexer" {
-						log.Printf("Active Tasks: indexing ddoc %q db %q: changes %d", *d.DesignDocument, *d.Database, *d.TotalChanges)
-						indexerChangesTotal.WithLabelValues(*d.Database, *d.DesignDocument).Set(float64(*d.TotalChanges))
-						indexerChangesDone.WithLabelValues(*d.Database, *d.DesignDocument).Set(float64(*d.ChangesDone))
-					}
-					if *d.Type == "replication" {
-						log.Printf("Active Tasks: replication %q", *d.DocID)
-						// no prometheus output for replication, as that's handled elsewhere
-					}
-					if *d.Type == "database_compaction" {
-						log.Printf("Active Tasks: compaction db %q total change %d done %d", *d.Database, *d.TotalChanges, *d.ChangesDone)
-						compactionChangesTotal.WithLabelValues(*d.Database).Set(float64(*d.TotalChanges))
-						compactionChangesDone.WithLabelValues(*d.Database).Set(float64(*d.ChangesDone))
-					}
-				}
+			} else {
+				rc.FailBox.Success()
 			}
 		}
-	}()
+	}
+}
 
+func (rc *ActiveTasksMonitor) tick() error {
+	// fetch active tasks
+	getActiveTasksOptions := rc.Cldt.NewGetActiveTasksOptions()
+	activeTaskResult, _, err := rc.Cldt.GetActiveTasks(getActiveTasksOptions)
+
+	if err != nil {
+		return err
+	}
+
+	for _, d := range activeTaskResult {
+		if *d.Type == "indexer" {
+			log.Printf("ActiveTasksMonitor: indexing ddoc %q db %q: changes %d", *d.DesignDocument, *d.Database, *d.TotalChanges)
+			indexerChangesTotal.WithLabelValues(*d.Database, *d.DesignDocument).Set(float64(*d.TotalChanges))
+			indexerChangesDone.WithLabelValues(*d.Database, *d.DesignDocument).Set(float64(*d.ChangesDone))
+		}
+		if *d.Type == "replication" {
+			log.Printf("ActiveTasksMonitor: replication %q", *d.DocID)
+			// no prometheus output for replication, as that's handled elsewhere
+		}
+		if *d.Type == "database_compaction" {
+			log.Printf("ActiveTasksMonitor: compaction db %q total change %d done %d", *d.Database, *d.TotalChanges, *d.ChangesDone)
+			compactionChangesTotal.WithLabelValues(*d.Database).Set(float64(*d.TotalChanges))
+			compactionChangesDone.WithLabelValues(*d.Database).Set(float64(*d.ChangesDone))
+		}
+	}
+
+	return nil
 }

@@ -5,6 +5,7 @@ import (
 	"log"
 	"time"
 
+	"cloudant.com/couchmonitor/internal/utils"
 	"github.com/IBM/cloudant-go-sdk/cloudantv1"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
@@ -13,7 +14,7 @@ import (
 type ThroughputMonitor struct {
 	Cldt     *cloudantv1.CloudantV1
 	Interval time.Duration
-	Done     chan bool
+	FailBox  *utils.FailBox
 }
 
 var (
@@ -28,26 +29,33 @@ var (
 
 func (tm *ThroughputMonitor) Go() {
 	ticker := time.NewTicker(tm.Interval)
-	go func() {
-		for {
-			select {
-			case <-tm.Done:
-				return
-			case <-ticker.C:
-				log.Println("ThroughputMonitor ticker")
-				tm.tick()
+	for {
+		select {
+		case <-ticker.C:
+			log.Println("ThroughputMonitor: tick")
+			err := tm.tick()
+
+			// Exit the monitor if we've not been successful for 20 minutes
+			if err != nil {
+				log.Printf("ThroughputMonitor error getting throughput: %v; last success: %s", err, tm.FailBox.LastSuccess())
+				tm.FailBox.Failure()
+				if tm.FailBox.ShouldExit() {
+					log.Printf("ThroughputMonitor exiting; >20 minutes since last success at %s", tm.FailBox.LastSuccess())
+					return
+				}
+			} else {
+				tm.FailBox.Failure()
 			}
 		}
-	}()
+	}
 }
 
-func (tm *ThroughputMonitor) tick() {
+func (tm *ThroughputMonitor) tick() error {
 	getCurrentThroughputInformationOptions := tm.Cldt.NewGetCurrentThroughputInformationOptions()
 
 	ti, _, err := tm.Cldt.GetCurrentThroughputInformation(getCurrentThroughputInformationOptions)
 	if err != nil {
-		log.Printf("ThroughputMonitor error getting throughput: %v", err)
-		return
+		return err
 	}
 
 	throughput.WithLabelValues("lookup").Set(float64(*ti.Throughput.Read))
@@ -55,6 +63,7 @@ func (tm *ThroughputMonitor) tick() {
 	throughput.WithLabelValues("query").Set(float64(*ti.Throughput.Query))
 
 	b, _ := json.Marshal(ti)
-	log.Println(string(b))
+	log.Printf("ThroughputMonitor: %v", string(b))
 
+	return nil
 }
