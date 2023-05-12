@@ -18,27 +18,22 @@ var addr = flag.String("listen-address", "127.0.0.1:8080", "The address to liste
 func main() {
 	log.Println("Hello, World!")
 
-	// connect to Cloudant
-	service, err := cloudantv1.NewCloudantV1UsingExternalConfig(
-		&cloudantv1.CloudantV1Options{
-			ServiceName: "CLOUDANT",
-		})
-
+	cldt, err := newCloudantClient()
 	if err != nil {
 		log.Fatalf("Could not initialise Cloudant client: %v", err)
 	}
 
-	log.Printf("Using Cloudant: %s", service.GetServiceURL())
+	log.Printf("Using Cloudant: %s", cldt.GetServiceURL())
 
 	// set up the replication collector to poll every 5s
 	rc := monitors.ReplicationCollector{
-		Cldt:     service,
+		Cldt:     cldt,
 		Interval: 5 * time.Second,
 		Done:     make(chan bool),
 	}
 	rc.Go()
 	tm := monitors.ThroughputMonitor{
-		Cldt:     service,
+		Cldt:     cldt,
 		Interval: 5 * time.Second,
 		Done:     make(chan bool),
 	}
@@ -46,4 +41,33 @@ func main() {
 
 	http.Handle("/metrics", promhttp.Handler())
 	log.Fatal(http.ListenAndServe(*addr, nil))
+}
+
+// newCloudantClient creates a new client for Cloudant, configured
+// from environment variables, with a safe HTTP client.
+func newCloudantClient() (*cloudantv1.CloudantV1, error) {
+
+	// connect to Cloudant
+	service, err := cloudantv1.NewCloudantV1UsingExternalConfig(
+		&cloudantv1.CloudantV1Options{
+			ServiceName: "CLOUDANT",
+		},
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	t := http.DefaultTransport.(*http.Transport).Clone()
+	t.MaxIdleConns = 100
+	t.MaxConnsPerHost = 10
+	t.MaxIdleConnsPerHost = 10
+	c := &http.Client{
+		Timeout:   10 * time.Second,
+		Transport: t,
+	}
+	service.Service.SetHTTPClient(c)
+
+	service.EnableRetries(3, 30*time.Second)
+
+	return service, nil
 }
