@@ -18,9 +18,7 @@ type ReplicationCollector struct {
 func (rc *ReplicationCollector) Go() {
 	// dummy labels (for now)
 	labels := make(map[string]string)
-	labels["source"] = "https://4268d9ec-250f-4d59-bcbd-fb47a14ef856-bluemix.cloudant.com/americanairlines/"
-	labels["target"] = "https://4268d9ec-250f-4d59-bcbd-fb47a14ef856-bluemix.cloudant.com/aa3/"
-	labels["id"] = "728b1e5bf539e8a1ee796d25869c5b37"
+	labels["id"] = "dallas_to_washington_prod"
 
 	docsProcessed := prometheus.NewGauge(prometheus.GaugeOpts{
 		Name:        "replication_docs_processed_total",
