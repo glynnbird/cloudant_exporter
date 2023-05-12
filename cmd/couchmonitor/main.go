@@ -26,10 +26,16 @@ func main() {
 	log.Println("Hello, World!")
 
 	// connect to Cloudant
-	service, _ := cloudantv1.NewCloudantV1UsingExternalConfig(
+	service, err := cloudantv1.NewCloudantV1UsingExternalConfig(
 		&cloudantv1.CloudantV1Options{
 			ServiceName: "CLOUDANT",
 		})
+
+	if err != nil {
+		log.Fatalf("Could not initialise Cloudant client: %v", err)
+	}
+
+	log.Printf("Using Cloudant: %s", service.GetServiceURL())
 
 	// Create a new registry.
 	reg := prometheus.NewRegistry()
