@@ -42,6 +42,8 @@ func (rc *ReplicationCollector) Go() {
 
 				// fetch scheduler status
 				getSchedulerDocsOptions := rc.Cldt.NewGetSchedulerDocsOptions()
+				getSchedulerDocsOptions.SetLimit(50)
+				getSchedulerDocsOptions.SetStates([]string{"running"})
 				schedulerDocsResult, _, err := rc.Cldt.GetSchedulerDocs(getSchedulerDocsOptions)
 
 				if err != nil {
@@ -49,7 +51,6 @@ func (rc *ReplicationCollector) Go() {
 					continue
 				}
 
-				// to stdout - not plumbed into Prometheus client yet
 				if len(schedulerDocsResult.Docs) > 0 {
 					log.Printf("docs written %d", *schedulerDocsResult.Docs[0].Info.DocsWritten)
 					docsProcessed.Set(float64(*schedulerDocsResult.Docs[0].Info.DocsWritten))
