@@ -74,7 +74,7 @@ func (rc *ActiveTasksMonitor) Go() {
 					if *d.Type == "database_compaction" {
 						log.Printf("Active Tasks: compaction db %q total change %d done %d", *d.Database, *d.TotalChanges, *d.ChangesDone)
 						compactionChangesTotal.WithLabelValues(*d.Database).Set(float64(*d.TotalChanges))
-						compactionChangesTotal.WithLabelValues(*d.Database).Set(float64(*d.ChangesDone))
+						compactionChangesDone.WithLabelValues(*d.Database).Set(float64(*d.ChangesDone))
 					}
 				}
 			}
