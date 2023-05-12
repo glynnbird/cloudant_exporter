@@ -11,7 +11,6 @@ import (
 )
 
 type ThroughputMonitor struct {
-	Reg      *prometheus.Registry
 	Cldt     *cloudantv1.CloudantV1
 	Interval time.Duration
 	Done     chan bool

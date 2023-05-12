@@ -4,19 +4,12 @@ import (
 	"flag"
 	"log"
 	"net/http"
-
-	// "regexp"
 	"time"
 
-	"cloudant.com/couchmonitor/internal/monitors"
-
-	// Cloudant Go SDK
 	"github.com/IBM/cloudant-go-sdk/cloudantv1"
-
-	// Prometheus client
-	"github.com/prometheus/client_golang/prometheus"
-	// "github.com/prometheus/client_golang/prometheus/collectors"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+
+	"cloudant.com/couchmonitor/internal/monitors"
 )
 
 var addr = flag.String("listen-address", "127.0.0.1:8080", "The address to listen on for HTTP requests.")
@@ -37,33 +30,20 @@ func main() {
 
 	log.Printf("Using Cloudant: %s", service.GetServiceURL())
 
-	// Create a new registry.
-	reg := prometheus.NewRegistry()
-
 	// set up the replication collector to poll every 5s
 	rc := monitors.ReplicationCollector{
-		Reg:      reg,
 		Cldt:     service,
 		Interval: 5 * time.Second,
 		Done:     make(chan bool),
 	}
 	rc.Go()
 	tm := monitors.ThroughputMonitor{
-		Reg:      reg,
 		Cldt:     service,
 		Interval: 5 * time.Second,
 		Done:     make(chan bool),
 	}
 	tm.Go()
 
-	// Expose the registered metrics via HTTP.
-	http.Handle("/metrics", promhttp.HandlerFor(
-		reg,
-		promhttp.HandlerOpts{
-			// Opt into OpenMetrics to support exemplars.
-			EnableOpenMetrics: true,
-		},
-	))
-	http.Handle("/metrics2", promhttp.Handler())
+	http.Handle("/metrics", promhttp.Handler())
 	log.Fatal(http.ListenAndServe(*addr, nil))
 }
