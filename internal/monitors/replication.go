@@ -16,8 +16,9 @@ type ReplicationCollector struct {
 }
 
 func (rc *ReplicationCollector) Go() {
-	docsProcessed := prometheus.NewCounter(prometheus.CounterOpts{
+	docsProcessed := prometheus.NewGauge(prometheus.GaugeOpts{
 		Name: "replication_docs_processed_total",
+		Help: "The number of documents writtent ot the target",
 	})
 	rc.Reg.MustRegister(docsProcessed)
 
@@ -30,7 +31,17 @@ func (rc *ReplicationCollector) Go() {
 				return
 			case t := <-ticker.C:
 				log.Println("Tick at", t)
-				docsProcessed.Inc()
+				log.Println("Polling Cloudant replication", t)
+
+				// fetch scheduler status
+				getSchedulerDocsOptions := rc.Cldt.NewGetSchedulerDocsOptions()
+				schedulerDocsResult, _, _ := rc.Cldt.GetSchedulerDocs(getSchedulerDocsOptions)
+
+				// to stdout - not plumbed into Prometheus client yet
+				if len(schedulerDocsResult.Docs) > 0 {
+					log.Printf("docs written %d", *schedulerDocsResult.Docs[0].Info.DocsWritten)
+					docsProcessed.Set(float64(*schedulerDocsResult.Docs[0].Info.DocsWritten))
+				}
 			}
 		}
 	}()
