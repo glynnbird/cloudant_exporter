@@ -21,7 +21,7 @@ func (rc *ReplicationCollector) Go() {
 	labels["id"] = "dallas_to_washington_prod"
 
 	docsProcessed := prometheus.NewGauge(prometheus.GaugeOpts{
-		Name:        "replication_docs_processed_total",
+		Name:        "cloudant_replication_docs_processed_total",
 		Help:        "The number of documents written to the target",
 		ConstLabels: prometheus.Labels(labels),
 	})
@@ -52,7 +52,6 @@ func (rc *ReplicationCollector) Go() {
 				if len(schedulerDocsResult.Docs) > 0 {
 					log.Printf("docs written %d", *schedulerDocsResult.Docs[0].Info.DocsWritten)
 					docsProcessed.Set(float64(*schedulerDocsResult.Docs[0].Info.DocsWritten))
-
 				}
 			}
 		}
