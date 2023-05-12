@@ -9,7 +9,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promauto"
 )
 
-type ReplicationCollector struct {
+type ReplicationMonitor struct {
 	Cldt     *cloudantv1.CloudantV1
 	Interval time.Duration
 	Done     chan bool
@@ -24,7 +24,7 @@ var (
 	)
 )
 
-func (rc *ReplicationCollector) Go() {
+func (rc *ReplicationMonitor) Go() {
 	ticker := time.NewTicker(rc.Interval)
 
 	go func() {
@@ -42,7 +42,7 @@ func (rc *ReplicationCollector) Go() {
 
 				schedulerDocsResult, _, err := rc.Cldt.GetSchedulerDocs(getSchedulerDocsOptions)
 				if err != nil {
-					log.Printf("ReplicationCollector: Error in GetSchedulerDocs: %v", err)
+					log.Printf("ReplicationMonitor: Error in GetSchedulerDocs: %v", err)
 					continue
 				}
 				for _, d := range schedulerDocsResult.Docs {

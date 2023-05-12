@@ -31,7 +31,7 @@ func main() {
 	log.Printf("Using Cloudant: %s", service.GetServiceURL())
 
 	// set up the replication collector to poll every 5s
-	rc := monitors.ReplicationCollector{
+	rc := monitors.ReplicationMonitor{
 		Cldt:     service,
 		Interval: 5 * time.Second,
 		Done:     make(chan bool),
@@ -43,6 +43,12 @@ func main() {
 		Done:     make(chan bool),
 	}
 	tm.Go()
+	atm := monitors.ActiveTasksMonitor{
+		Cldt:     service,
+		Interval: 5 * time.Second,
+		Done:     make(chan bool),
+	}
+	atm.Go()
 
 	http.Handle("/metrics", promhttp.Handler())
 	log.Fatal(http.ListenAndServe(*addr, nil))
