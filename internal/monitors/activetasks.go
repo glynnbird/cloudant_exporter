@@ -16,17 +16,29 @@ type ActiveTasksMonitor struct {
 }
 
 var (
-	indexerChanges = promauto.NewGaugeVec(prometheus.GaugeOpts{
-		Name: "cloudant_indexing_docs_processed_total",
-		Help: "The number of documents indexed",
+	indexerChangesTotal = promauto.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "cloudant_indexing_changes_total",
+		Help: "The total number of changes to index",
 	},
-		[]string{"database", "design_document", "total_changes"},
+		[]string{"database", "design_document"},
 	)
-	compactionChanges = promauto.NewGaugeVec(prometheus.GaugeOpts{
-		Name: "cloudant_compaction_processed_total",
-		Help: "The number of documents compacted",
+	indexerChangesDone = promauto.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "cloudant_indexing_changes_done",
+		Help: "The  number of changes indexed",
 	},
-		[]string{"database", "total_changes"},
+		[]string{"database", "design_document"},
+	)
+	compactionChangesTotal = promauto.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "cloudant_compaction_changes_total",
+		Help: "The number of documents to compact",
+	},
+		[]string{"database"},
+	)
+	compactionChangesDone = promauto.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "cloudant_compaction_changes_done",
+		Help: "The number of documents to compacted",
+	},
+		[]string{"database"},
 	)
 )
 
@@ -52,7 +64,8 @@ func (rc *ActiveTasksMonitor) Go() {
 				for _, d := range activeTaskResult {
 					if *d.Type == "indexer" {
 						log.Printf("Active Tasks: indexing ddoc %q db %q: changes %d", *d.DesignDocument, *d.Database, *d.TotalChanges)
-						indexerChanges.WithLabelValues(*d.Database, *d.DesignDocument, string(*d.TotalChanges)).Set(float64(*d.ChangesDone))
+						indexerChangesTotal.WithLabelValues(*d.Database, *d.DesignDocument).Set(float64(*d.TotalChanges))
+						indexerChangesDone.WithLabelValues(*d.Database, *d.DesignDocument).Set(float64(*d.ChangesDone))
 					}
 					if *d.Type == "replication" {
 						log.Printf("Active Tasks: replication %q", *d.DocID)
@@ -60,7 +73,8 @@ func (rc *ActiveTasksMonitor) Go() {
 					}
 					if *d.Type == "database_compaction" {
 						log.Printf("Active Tasks: compaction db %q total change %d done %d", *d.Database, *d.TotalChanges, *d.ChangesDone)
-						compactionChanges.WithLabelValues(*d.Database, string(*d.TotalChanges)).Set(float64(*d.ChangesDone))
+						compactionChangesTotal.WithLabelValues(*d.Database).Set(float64(*d.TotalChanges))
+						compactionChangesTotal.WithLabelValues(*d.Database).Set(float64(*d.ChangesDone))
 					}
 				}
 			}
