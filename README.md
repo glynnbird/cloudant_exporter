@@ -15,5 +15,5 @@ export CLOUDANT_APIKEY="my_IAM_API_KEY"
 ## Running
 
 ```sh
-go run cmd/couchmonitor/main.go 
+go run ./cmd/couchmonitor
 ```
