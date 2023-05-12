@@ -20,7 +20,7 @@ var (
 		Name: "cloudant_replication_docs_processed_total",
 		Help: "The number of documents written to the target",
 	},
-		[]string{"id"},
+		[]string{"docid"},
 	)
 )
 
@@ -46,8 +46,8 @@ func (rc *ReplicationCollector) Go() {
 					continue
 				}
 				for _, d := range schedulerDocsResult.Docs {
-					log.Printf("docs written %d", *d.Info.DocsWritten)
-					docsProcessed.WithLabelValues(*d.ID).Set(float64(*d.Info.DocsWritten))
+					log.Printf("Replication %q: docs written %d", *d.DocID, *d.Info.DocsWritten)
+					docsProcessed.WithLabelValues(*d.DocID).Set(float64(*d.Info.DocsWritten))
 				}
 			}
 		}
