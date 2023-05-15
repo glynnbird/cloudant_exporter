@@ -11,18 +11,15 @@ COPY . .
 RUN go mod download
  
 # Builds your app with optional configuration
-RUN go build  ./cmd/couchmonitor
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build  ./cmd/couchmonitor
  
 ############################
 # STEP 2 build a small image
 ############################
-FROM scratch
+FROM alpine
 
 # Copy our static executable.
 COPY --from=builder /app/couchmonitor /
-
-# Tells Docker which network port your container listens on
-EXPOSE 8080
  
 # Specifies the executable command that runs when the container starts
 CMD [ "/couchmonitor", "--listen-address", "0.0.0.0:8080"]
