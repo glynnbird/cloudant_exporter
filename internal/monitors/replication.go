@@ -69,12 +69,13 @@ func (rc *ReplicationMonitor) Go() {
 			if err != nil {
 				log.Printf("ReplicationMonitor error getting tasks: %v; last success: %s", err, rc.FailBox.LastSuccess())
 				rc.FailBox.Failure()
-				if rc.FailBox.ShouldExit() {
-					log.Printf("ReplicationMonitor exiting; >20 minutes since last success at %s", rc.FailBox.LastSuccess())
-					return
-				}
 			} else {
 				rc.FailBox.Success()
+			}
+
+			if rc.FailBox.ShouldExit() {
+				log.Printf("ReplicationMonitor exiting; >20 minutes since last success at %s", rc.FailBox.LastSuccess())
+				return
 			}
 		}
 	}
