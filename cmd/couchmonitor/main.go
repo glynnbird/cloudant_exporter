@@ -34,30 +34,30 @@ func main() {
 	// request in `failAfter` time.
 	monitorFailed := make(chan string)
 
-	rc := monitors.ReplicationMonitor{
-		Cldt:     cldt,
+	rc := monitorLooper{
 		Interval: 5 * time.Second,
 		FailBox:  utils.NewFailBox(failAfter),
+		Chk:      &monitors.ReplicationMonitor{Cldt: cldt},
 	}
 	go func() {
 		rc.Go()
 		monitorFailed <- "ReplicationMonitor"
 	}()
 
-	tm := monitors.ThroughputMonitor{
-		Cldt:     cldt,
+	tm := monitorLooper{
 		Interval: 5 * time.Second,
 		FailBox:  utils.NewFailBox(failAfter),
+		Chk:      &monitors.ThroughputMonitor{Cldt: cldt},
 	}
 	go func() {
 		tm.Go()
 		monitorFailed <- "ThroughputMonitor"
 	}()
 
-	atm := monitors.ActiveTasksMonitor{
-		Cldt:     cldt,
+	atm := monitorLooper{
 		Interval: 5 * time.Second,
 		FailBox:  utils.NewFailBox(failAfter),
+		Chk:      &monitors.ActiveTasksMonitor{Cldt: cldt},
 	}
 	go func() {
 		atm.Go()
@@ -103,4 +103,42 @@ func newCloudantClient() (*cloudantv1.CloudantV1, error) {
 	service.EnableRetries(3, 30*time.Second)
 
 	return service, nil
+}
+
+type monitor interface {
+	Retrieve() error
+	Name() string
+}
+
+// monitorLooper runs Chk every Interval, using FailBox to decide when to give up and exit
+// on receiving errors.
+type monitorLooper struct {
+	Interval time.Duration
+	FailBox  *utils.FailBox
+	Chk      monitor
+}
+
+func (rc *monitorLooper) Go() {
+	ticker := time.NewTicker(rc.Interval)
+
+	for {
+		select {
+		case <-ticker.C:
+			log.Printf("[%s] tick", rc.Chk.Name())
+			err := rc.Chk.Retrieve()
+
+			// Exit the monitor if we've not been successful for 20 minutes
+			if err != nil {
+				log.Printf("[%s] error getting tasks: %v; last success: %s", rc.Chk.Name(), err, rc.FailBox.LastSuccess())
+				rc.FailBox.Failure()
+			} else {
+				rc.FailBox.Success()
+			}
+
+			if rc.FailBox.ShouldExit() {
+				log.Printf("[%s] exiting; >%s since last success at %s", rc.Chk.Name(), failAfter, rc.FailBox.LastSuccess())
+				return
+			}
+		}
+	}
 }
