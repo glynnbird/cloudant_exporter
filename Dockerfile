@@ -11,10 +11,10 @@ COPY . .
 RUN go mod download
  
 # Builds your app with optional configuration
-RUN go build cmd/couchmonitor/main.go
+RUN go build  ./cmd/couchmonitor
  
 # Tells Docker which network port your container listens on
 EXPOSE 8080
  
 # Specifies the executable command that runs when the container starts
-CMD [ "/app/main", "--listen-address", "0.0.0.0:8080"]
+CMD [ "/app/couchmonitor", "--listen-address", "0.0.0.0:8080"]
