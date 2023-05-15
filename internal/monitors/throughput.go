@@ -39,12 +39,13 @@ func (tm *ThroughputMonitor) Go() {
 			if err != nil {
 				log.Printf("ThroughputMonitor error getting throughput: %v; last success: %s", err, tm.FailBox.LastSuccess())
 				tm.FailBox.Failure()
-				if tm.FailBox.ShouldExit() {
-					log.Printf("ThroughputMonitor exiting; >20 minutes since last success at %s", tm.FailBox.LastSuccess())
-					return
-				}
 			} else {
-				tm.FailBox.Failure()
+				tm.FailBox.Success()
+			}
+
+			if tm.FailBox.ShouldExit() {
+				log.Printf("ThroughputMonitor exiting; >20 minutes since last success at %s", tm.FailBox.LastSuccess())
+				return
 			}
 		}
 	}

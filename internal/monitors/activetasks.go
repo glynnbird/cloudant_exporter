@@ -56,12 +56,13 @@ func (rc *ActiveTasksMonitor) Go() {
 			if err != nil {
 				log.Printf("ActiveTasksMonitor error getting tasks: %v; last success: %s", err, rc.FailBox.LastSuccess())
 				rc.FailBox.Failure()
-				if rc.FailBox.ShouldExit() {
-					log.Printf("ActiveTasksMonitor exiting; >20 minutes since last success at %s", rc.FailBox.LastSuccess())
-					return
-				}
 			} else {
 				rc.FailBox.Success()
+			}
+
+			if rc.FailBox.ShouldExit() {
+				log.Printf("ActiveTasksMonitor exiting; >20 minutes since last success at %s", rc.FailBox.LastSuccess())
+				return
 			}
 		}
 	}
