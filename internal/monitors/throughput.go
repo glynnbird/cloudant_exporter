@@ -27,31 +27,11 @@ var (
 	)
 )
 
-func (tm *ThroughputMonitor) Go() {
-	ticker := time.NewTicker(tm.Interval)
-	for {
-		select {
-		case <-ticker.C:
-			log.Println("ThroughputMonitor: tick")
-			err := tm.tick()
-
-			// Exit the monitor if we've not been successful for 20 minutes
-			if err != nil {
-				log.Printf("ThroughputMonitor error getting throughput: %v; last success: %s", err, tm.FailBox.LastSuccess())
-				tm.FailBox.Failure()
-			} else {
-				tm.FailBox.Success()
-			}
-
-			if tm.FailBox.ShouldExit() {
-				log.Printf("ThroughputMonitor exiting; >20 minutes since last success at %s", tm.FailBox.LastSuccess())
-				return
-			}
-		}
-	}
+func (tm *ThroughputMonitor) Name() string {
+	return "ThroughputMonitor"
 }
 
-func (tm *ThroughputMonitor) tick() error {
+func (tm *ThroughputMonitor) Retrieve() error {
 	getCurrentThroughputInformationOptions := tm.Cldt.NewGetCurrentThroughputInformationOptions()
 
 	ti, _, err := tm.Cldt.GetCurrentThroughputInformation(getCurrentThroughputInformationOptions)
@@ -64,7 +44,7 @@ func (tm *ThroughputMonitor) tick() error {
 	throughput.WithLabelValues("query").Set(float64(*ti.Throughput.Query))
 
 	b, _ := json.Marshal(ti)
-	log.Printf("ThroughputMonitor: %v", string(b))
+	log.Printf("[ThroughputMonitor] %v", string(b))
 
 	return nil
 }

@@ -55,33 +55,11 @@ var (
 	)
 )
 
-func (rc *ReplicationMonitor) Go() {
-	ticker := time.NewTicker(rc.Interval)
-
-	for {
-		select {
-		case <-ticker.C:
-			log.Println("ReplicationMonitor: tick")
-
-			err := rc.tick()
-
-			// Exit the monitor if we've not been successful for 20 minutes
-			if err != nil {
-				log.Printf("ReplicationMonitor error getting tasks: %v; last success: %s", err, rc.FailBox.LastSuccess())
-				rc.FailBox.Failure()
-			} else {
-				rc.FailBox.Success()
-			}
-
-			if rc.FailBox.ShouldExit() {
-				log.Printf("ReplicationMonitor exiting; >20 minutes since last success at %s", rc.FailBox.LastSuccess())
-				return
-			}
-		}
-	}
+func (rc *ReplicationMonitor) Name() string {
+	return "ReplicationMonitor"
 }
 
-func (rc *ReplicationMonitor) tick() error {
+func (rc *ReplicationMonitor) Retrieve() error {
 	// fetch scheduler status
 	getSchedulerDocsOptions := rc.Cldt.NewGetSchedulerDocsOptions()
 	getSchedulerDocsOptions.SetLimit(50)
@@ -92,7 +70,7 @@ func (rc *ReplicationMonitor) tick() error {
 		return err
 	}
 	for _, d := range schedulerDocsResult.Docs {
-		log.Printf("ReplicationMonitor: Replication %q: docs written %d", *d.DocID, *d.Info.DocsWritten)
+		log.Printf("[ReplicationMonitor] Replication %q: docs written %d", *d.DocID, *d.Info.DocsWritten)
 		if d.Info.ChangesPending != nil {
 			changesPendingTotal.WithLabelValues(*d.DocID).Set(float64(*d.Info.ChangesPending))
 		}
