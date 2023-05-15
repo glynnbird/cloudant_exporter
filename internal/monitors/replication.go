@@ -92,7 +92,9 @@ func (rc *ReplicationMonitor) tick() error {
 	}
 	for _, d := range schedulerDocsResult.Docs {
 		log.Printf("ReplicationMonitor: Replication %q: docs written %d", *d.DocID, *d.Info.DocsWritten)
-		changesPendingTotal.WithLabelValues(*d.DocID).Set(float64(*d.Info.ChangesPending))
+		if d.Info.ChangesPending != nil {
+			changesPendingTotal.WithLabelValues(*d.DocID).Set(float64(*d.Info.ChangesPending))
+		}
 		docWriteFailuresTotal.WithLabelValues(*d.DocID).Set(float64(*d.Info.DocWriteFailures))
 		docsReadTotal.WithLabelValues(*d.DocID).Set(float64(*d.Info.DocsRead))
 		docsWrittenTotal.WithLabelValues(*d.DocID).Set(float64(*d.Info.DocsWritten))
