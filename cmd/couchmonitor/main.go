@@ -20,6 +20,7 @@ const failAfter = 5 * time.Minute
 // entry point
 func main() {
 	log.Println("Hello, World!")
+	flag.Parse()
 
 	cldt, err := newCloudantClient()
 	if err != nil {
