@@ -1,5 +1,5 @@
 # Specifies a parent image
-FROM golang:1.19.2
+FROM golang:1.20.4
  
 # Creates an app directory to hold your app’s source code
 WORKDIR /app
@@ -17,4 +17,4 @@ RUN go build cmd/couchmonitor/main.go
 EXPOSE 8080
  
 # Specifies the executable command that runs when the container starts
-CMD [ "/app/main" ]
+CMD [ "/app/main", "--listen-address", "0.0.0.0:8080"]
