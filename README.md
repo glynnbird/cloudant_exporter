@@ -36,3 +36,15 @@ docker run \
   -p 8080:8080 \
   couchmonitor:latest
 ```
+
+## Running in IBM Code Engine
+
+Assuming you have installed the [IBM Cloud CLI](https://cloud.ibm.com/docs/cli?topic=cli-install-ibmcloud-cli) and the [IBM Code Engine CLI plugin](https://cloud.ibm.com/docs/codeengine?topic=codeengine-cli), you can deploy `couchmonitor` into IBM Code Engine using the command line:
+
+```sh
+ibmcloud ce application create --name my_couchmonitor \
+  --image ghcr.io/glynnbird/couchmonitor:latest \
+  --env "CLOUDANT_URL=$CLOUDANT_URL" \
+  --env "CLOUDANT_APIK=$CLOUDANT_APIKEY" \
+  --max 1 --min 1
+```
