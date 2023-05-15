@@ -45,6 +45,6 @@ Assuming you have installed the [IBM Cloud CLI](https://cloud.ibm.com/docs/cli?t
 ibmcloud ce application create --name my_couchmonitor \
   --image ghcr.io/glynnbird/couchmonitor:latest \
   --env "CLOUDANT_URL=$CLOUDANT_URL" \
-  --env "CLOUDANT_APIK=$CLOUDANT_APIKEY" \
+  --env "CLOUDANT_APIKEY=$CLOUDANT_APIKEY" \
   --max 1 --min 1
 ```
