@@ -16,7 +16,10 @@ RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build  ./cmd/couchmonitor
 ############################
 # STEP 2 build a small image
 ############################
+# Development
 FROM alpine
+# Production
+# FROM gcr.io/distroless/static-debian11
 
 # Copy our static executable.
 COPY --from=builder /app/couchmonitor /
