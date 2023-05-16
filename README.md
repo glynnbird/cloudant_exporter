@@ -1,4 +1,4 @@
-# promgo
+# couchmonitor
 
 A simple Cloudant Prometheus client that polls a Cloudant account for information
 and publishes them in a Prometheus-consumable format on a `/metrics` endpoint.
