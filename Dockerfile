@@ -1,5 +1,5 @@
 # Specifies a parent image
-FROM golang:1.20.4
+FROM golang:1.20.4 AS builder
  
 # Creates an app directory to hold your app’s source code
 WORKDIR /app
@@ -11,10 +11,15 @@ COPY . .
 RUN go mod download
  
 # Builds your app with optional configuration
-RUN go build  ./cmd/couchmonitor
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build  ./cmd/couchmonitor
  
-# Tells Docker which network port your container listens on
-EXPOSE 8080
+############################
+# STEP 2 build a small image
+############################
+FROM alpine
+
+# Copy our static executable.
+COPY --from=builder /app/couchmonitor /
  
 # Specifies the executable command that runs when the container starts
-CMD [ "/app/couchmonitor", "--listen-address", "0.0.0.0:8080"]
+CMD [ "/couchmonitor", "--listen-address", "0.0.0.0:8080"]
