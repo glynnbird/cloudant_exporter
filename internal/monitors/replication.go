@@ -7,7 +7,6 @@ import (
 	"cloudant.com/couchmonitor/internal/utils"
 	"github.com/IBM/cloudant-go-sdk/cloudantv1"
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/promauto"
 )
 
 type ReplicationMonitor struct {
@@ -17,37 +16,37 @@ type ReplicationMonitor struct {
 }
 
 var (
-	changesPendingTotal = promauto.NewGaugeVec(prometheus.GaugeOpts{
+	changesPendingTotal = utils.AutoNewSettableCounterVec(prometheus.Opts{
 		Name: "cloudant_replication_changes_pending_total",
 		Help: "The number of changes remaining to process (approximately)",
 	},
 		[]string{"docid"},
 	)
-	docWriteFailuresTotal = promauto.NewGaugeVec(prometheus.GaugeOpts{
+	docWriteFailuresTotal = utils.AutoNewSettableCounterVec(prometheus.Opts{
 		Name: "cloudant_replication_doc_write_failures_total",
 		Help: "The number of failures writing documents to the target",
 	},
 		[]string{"docid"},
 	)
-	docsReadTotal = promauto.NewGaugeVec(prometheus.GaugeOpts{
+	docsReadTotal = utils.AutoNewSettableCounterVec(prometheus.Opts{
 		Name: "cloudant_replication_docs_read_total",
 		Help: "Total number of documents read from the source database",
 	},
 		[]string{"docid"},
 	)
-	docsWrittenTotal = promauto.NewGaugeVec(prometheus.GaugeOpts{
+	docsWrittenTotal = utils.AutoNewSettableCounterVec(prometheus.Opts{
 		Name: "cloudant_replication_docs_written_total",
 		Help: "Total number of documents written to the target database",
 	},
 		[]string{"docid"},
 	)
-	missingRevsFoundTotal = promauto.NewGaugeVec(prometheus.GaugeOpts{
+	missingRevsFoundTotal = utils.AutoNewSettableCounterVec(prometheus.Opts{
 		Name: "cloudant_replication_missing_revs_found_total",
 		Help: "Total number of revs found so far on the source that are not at the target",
 	},
 		[]string{"docid"},
 	)
-	revsCheckedTotal = promauto.NewGaugeVec(prometheus.GaugeOpts{
+	revsCheckedTotal = utils.AutoNewSettableCounterVec(prometheus.Opts{
 		Name: "cloudant_replication_revs_checked_total",
 		Help: "Total number of revs processed on the source",
 	},
