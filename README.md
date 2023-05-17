@@ -52,3 +52,32 @@ ibmcloud ce application create \
   --env "CLOUDANT_APIKEY=$CLOUDANT_APIKEY" \
   --max 1 --min 1
 ```
+
+## Running Prometheus locally
+
+[Download Prometheus](https://prometheus.io/docs/prometheus/latest/getting_started/#downloading-and-running-prometheus) or run `brew install prometheus` on a Mac.
+
+Create a `prometheus.yml` file containing:
+
+```yaml
+global:
+
+  external_labels:
+    monitor: 'cloudant'
+
+scrape_configs:
+  - job_name: 'cloudant'
+
+    scrape_interval: 5s
+
+    static_configs:
+      - targets: ['localhost:8080']
+```
+
+where `localhost:8080` is the domain and port of your `couchmonitor` application.
+
+Run Prometheus with:
+
+```sh
+prometheus --config.file=prometheus.yml
+```
