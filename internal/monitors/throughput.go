@@ -44,7 +44,7 @@ func (tm *ThroughputMonitor) Retrieve() error {
 	throughput.WithLabelValues("write", "false").Set(float64(latest.Write))
 	throughput.WithLabelValues("query", "false").Set(float64(latest.Query))
 
-	latest = tr.OperationHistory[len(tr.Deny429History)-1]
+	latest = tr.Deny429History[len(tr.Deny429History)-1]
 	throughput.WithLabelValues("lookup", "true").Set(float64(latest.Lookup))
 	throughput.WithLabelValues("write", "true").Set(float64(latest.Write))
 	throughput.WithLabelValues("query", "true").Set(float64(latest.Query))
