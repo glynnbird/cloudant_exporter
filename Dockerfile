@@ -11,7 +11,7 @@ COPY . .
 RUN go mod download
  
 # Builds your app with optional configuration
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build  ./cmd/couchmonitor
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 make build
  
 ############################
 # STEP 2 build a small image

@@ -13,6 +13,8 @@ import (
 	"cloudant.com/couchmonitor/internal/utils"
 )
 
+var Version = "development"
+
 var addr = flag.String("listen-address", "127.0.0.1:8080", "The address to listen on for HTTP requests.")
 
 const failAfter = 5 * time.Minute
@@ -20,6 +22,7 @@ const failAfter = 5 * time.Minute
 // entry point
 func main() {
 	log.Println("Hello, World!")
+	log.Printf("version %s", Version)
 	flag.Parse()
 
 	cldt, err := newCloudantClient()
