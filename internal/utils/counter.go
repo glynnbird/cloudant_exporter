@@ -2,7 +2,6 @@ package utils
 
 import (
 	"sort"
-	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
 	dto "github.com/prometheus/client_model/go"
@@ -27,7 +26,7 @@ func (s LabelPairSorter) Less(i, j int) bool {
 }
 
 // SettableCounter implements a Prometheus counter-type metric
-// that can be directly set by a uesr, in contrast to the builtin
+// that can be directly set by a user, in contrast to the builtin
 // prometheus.Counter which can only be incremented.
 //
 // This allows us to more effectively "proxy" the counter type
@@ -39,8 +38,6 @@ type SettableCounter struct {
 
 	desc       *prometheus.Desc
 	labelPairs []*dto.LabelPair
-
-	now func() time.Time // To mock out time.Now() for testing.
 }
 
 // NewSettableCounter returns a new SettableCounter.
@@ -65,18 +62,7 @@ func NewSettableCounter(opts prometheus.Opts) *SettableCounter {
 	return &SettableCounter{
 		desc:       desc,
 		labelPairs: constLabelPairs,
-		now:        time.Now,
 	}
-}
-
-// Describe implements prometheus.Collector.
-func (c *SettableCounter) Describe(ch chan<- *prometheus.Desc) {
-	ch <- c.desc
-}
-
-// Collect implements prometheus.Collector.
-func (c *SettableCounter) Collect(ch chan<- prometheus.Metric) {
-	ch <- c
 }
 
 // Desc implements prometheus.Metric
@@ -97,6 +83,17 @@ func (c *SettableCounter) Set(v float64) {
 }
 
 // SettableCounterVec creates a metric vector containing SettableCounter.
+//
+// We do this by customising prometheus.MetricVec. We have to create a few methods to
+// support this, per the prometheus.MetricVec documentation:
+//
+// > To create a FooVec for custom Metric Foo, embed a pointer to MetricVec in
+// > FooVec and initialize it with NewMetricVec. Implement wrappers for
+// > GetMetricWithLabelValues and GetMetricWith that return (Foo, error) rather
+// > than (Metric, error). Similarly, create a wrapper for CurryWith that returns
+// > (*FooVec, error) rather than (*MetricVec, error). It is recommended to also
+// > add the convenience methods WithLabelValues, With, and MustCurryWith, which
+// > panic instead of returning errors. See also the MetricVec example.
 type SettableCounterVec struct {
 	*prometheus.MetricVec
 }
@@ -114,7 +111,6 @@ func NewSettableCounterVec(opts prometheus.Opts, labelNames []string) *SettableC
 			return &SettableCounter{
 				desc:       desc,
 				labelPairs: prometheus.MakeLabelPairs(desc, lvs),
-				now:        time.Now,
 			}
 		}),
 	}
@@ -127,12 +123,41 @@ func AutoNewSettableCounterVec(opts prometheus.Opts, labelNames []string) *Setta
 	return v
 }
 
+// GetMetricWithLabelValues is required to customise MetricVec (see SettableCounterVec doc)
 func (v *SettableCounterVec) GetMetricWithLabelValues(lvs ...string) (*SettableCounter, error) {
 	metric, err := v.MetricVec.GetMetricWithLabelValues(lvs...)
 	if metric != nil {
 		return metric.(*SettableCounter), err
 	}
 	return nil, err
+}
+
+// GetMetricWith is required to customise MetricVec (see SettableCounterVec doc)
+func (v *SettableCounterVec) GetMetricWith(labels prometheus.Labels) (*SettableCounter, error) {
+	metric, err := v.MetricVec.GetMetricWith(labels)
+	if metric != nil {
+		return metric.(*SettableCounter), err
+	}
+	return nil, err
+}
+
+// CurryWith is required to customise MetricVec (see SettableCounterVec doc)
+func (v *SettableCounterVec) CurryWith(labels prometheus.Labels) (*SettableCounterVec, error) {
+	vec, err := v.MetricVec.CurryWith(labels)
+	if vec != nil {
+		return &SettableCounterVec{vec}, err
+	}
+	return nil, err
+}
+
+// MustCurryWith works as CurryWith but panics where CurryWith would have
+// returned an error.
+func (v *SettableCounterVec) MustCurryWith(labels prometheus.Labels) *SettableCounterVec {
+	vec, err := v.CurryWith(labels)
+	if err != nil {
+		panic(err)
+	}
+	return vec
 }
 
 // WithLabelValues works as GetMetricWithLabelValues, but panics where
