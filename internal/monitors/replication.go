@@ -7,6 +7,7 @@ import (
 	"cloudant.com/couchmonitor/internal/utils"
 	"github.com/IBM/cloudant-go-sdk/cloudantv1"
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
 )
 
 type ReplicationMonitor struct {
@@ -16,12 +17,17 @@ type ReplicationMonitor struct {
 }
 
 var (
-	changesPendingTotal = utils.AutoNewSettableCounterVec(prometheus.Opts{
+	// Changes pending mostly goes down, but can go up if the replication
+	// begins to fall behind. It's definitely a gauge.
+	changesPendingTotal = promauto.NewGaugeVec(prometheus.GaugeOpts{
 		Name: "cloudant_replication_changes_pending_total",
 		Help: "The number of changes remaining to process (approximately)",
 	},
 		[]string{"docid"},
 	)
+
+	// Everything else is a counter-type, even if it's reset to zero somehow,
+    // at least if we are correctly labelling the metric.
 	docWriteFailuresTotal = utils.AutoNewSettableCounterVec(prometheus.Opts{
 		Name: "cloudant_replication_doc_write_failures_total",
 		Help: "The number of failures writing documents to the target",
