@@ -21,25 +21,25 @@ var (
 		Name: "cloudant_indexing_changes_total",
 		Help: "The total number of changes to index",
 	},
-		[]string{"database", "design_document"},
+		[]string{"node", "pid", "database", "design_document"},
 	)
 	indexerChangesDone = promauto.NewGaugeVec(prometheus.GaugeOpts{
 		Name: "cloudant_indexing_changes_done",
 		Help: "The  number of changes indexed",
 	},
-		[]string{"database", "design_document"},
+		[]string{"node", "pid", "database", "design_document"},
 	)
 	compactionChangesTotal = promauto.NewGaugeVec(prometheus.GaugeOpts{
 		Name: "cloudant_compaction_changes_total",
 		Help: "The number of documents to compact",
 	},
-		[]string{"database"},
+		[]string{"node", "pid", "database"},
 	)
 	compactionChangesDone = promauto.NewGaugeVec(prometheus.GaugeOpts{
 		Name: "cloudant_compaction_changes_done",
 		Help: "The number of documents to compacted",
 	},
-		[]string{"database"},
+		[]string{"node", "pid", "database"},
 	)
 )
 
@@ -59,17 +59,16 @@ func (rc *ActiveTasksMonitor) Retrieve() error {
 	for _, d := range activeTaskResult {
 		if *d.Type == "indexer" {
 			log.Printf("[ActiveTasksMonitor] indexing ddoc %q db %q: changes %d", *d.DesignDocument, *d.Database, *d.TotalChanges)
-			indexerChangesTotal.WithLabelValues(*d.Database, *d.DesignDocument).Set(float64(*d.TotalChanges))
-			indexerChangesDone.WithLabelValues(*d.Database, *d.DesignDocument).Set(float64(*d.ChangesDone))
+			indexerChangesTotal.WithLabelValues(*d.Node, *d.Pid, *d.Database, *d.DesignDocument).Set(float64(*d.TotalChanges))
+			indexerChangesDone.WithLabelValues(*d.Node, *d.Pid, *d.Database, *d.DesignDocument).Set(float64(*d.ChangesDone))
 		}
 		if *d.Type == "replication" {
-			log.Printf("[ActiveTasksMonitor] replication %q", *d.DocID)
-			// no prometheus output for replication, as that's handled elsewhere
+			// no prometheus output for replication, as that's handled by the ReplicationMonitor
 		}
 		if *d.Type == "database_compaction" {
 			log.Printf("[ActiveTasksMonitor] compaction db %q total change %d done %d", *d.Database, *d.TotalChanges, *d.ChangesDone)
-			compactionChangesTotal.WithLabelValues(*d.Database).Set(float64(*d.TotalChanges))
-			compactionChangesDone.WithLabelValues(*d.Database).Set(float64(*d.ChangesDone))
+			compactionChangesTotal.WithLabelValues(*d.Node, *d.Pid, *d.Database).Set(float64(*d.TotalChanges))
+			compactionChangesDone.WithLabelValues(*d.Node, *d.Pid, *d.Database).Set(float64(*d.ChangesDone))
 		}
 	}
 
