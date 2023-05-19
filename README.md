@@ -1,4 +1,4 @@
-# couchmonitor
+# Cloudant Prometheus Exporter
 
 A simple Cloudant Prometheus client that polls a Cloudant account for information
 and publishes them in a Prometheus-consumable format on a `/metrics` endpoint.
@@ -15,7 +15,7 @@ export CLOUDANT_APIKEY="my_IAM_API_KEY"
 ## Running locally
 
 ```sh
-go run ./cmd/couchmonitor
+go run ./cmd/cloudant_exporter
 ```
 
 ## Running in Docker
@@ -23,7 +23,7 @@ go run ./cmd/couchmonitor
 First we turn this repo into a Docker image:
 ```sh
 # build a docker image
-docker build -t couchmonitor .
+docker build -t cloudant_exporter .
 ```
 
 Then we can can spin up a container, exposing its port `8080` to our port `8080`:
@@ -34,20 +34,20 @@ docker run \
   -e CLOUDANT_URL="$CLOUDANT_URL" -e CLOUDANT_APIKEY="$CLOUDANT_APIKEY" \
   -i \
   -p 8080:8080 \
-  couchmonitor:latest
+  cloudant_exporter:latest
 ```
 
 ## Running in IBM Code Engine
 
-Assuming you have installed the [IBM Cloud CLI](https://cloud.ibm.com/docs/cli?topic=cli-install-ibmcloud-cli) and the [IBM Code Engine CLI plugin](https://cloud.ibm.com/docs/codeengine?topic=codeengine-cli), you can deploy `couchmonitor` into IBM Code Engine using the command line:
+Assuming you have installed the [IBM Cloud CLI](https://cloud.ibm.com/docs/cli?topic=cli-install-ibmcloud-cli) and the [IBM Code Engine CLI plugin](https://cloud.ibm.com/docs/codeengine?topic=codeengine-cli), you can deploy `cloudant_exporter` into IBM Code Engine using the command line:
 
 ```sh
 # create a project
-ibmcloud ce project create --name mycouchmonitorproject
+ibmcloud ce project create --name mycloudantexplorerproject
 # create an application within the project
 ibmcloud ce application create \
-  --name mycouchmonitor \
-  --image ghcr.io/glynnbird/couchmonitor:latest \
+  --name mycloudantexplorer \
+  --image ghcr.io/glynnbird/cloudant_exporter:latest \
   --env "CLOUDANT_URL=$CLOUDANT_URL" \
   --env "CLOUDANT_APIKEY=$CLOUDANT_APIKEY" \
   --max 1 --min 1
@@ -74,7 +74,7 @@ scrape_configs:
       - targets: ['localhost:8080']
 ```
 
-where `localhost:8080` is the domain and port of your `couchmonitor` application.
+where `localhost:8080` is the domain and port of your `cloudant_exporter` application.
 
 Run Prometheus with:
 

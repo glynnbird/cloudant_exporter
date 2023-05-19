@@ -9,8 +9,8 @@ import (
 	"github.com/IBM/cloudant-go-sdk/cloudantv1"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 
-	"cloudant.com/couchmonitor/internal/monitors"
-	"cloudant.com/couchmonitor/internal/utils"
+	"cloudant.com/cloudant_exporter/internal/monitors"
+	"cloudant.com/cloudant_exporter/internal/utils"
 )
 
 var Version = "development"
@@ -21,7 +21,7 @@ const failAfter = 5 * time.Minute
 
 // entry point
 func main() {
-	log.Println("Hello, World!")
+	log.Println("Cloudant Prometheus Exporter")
 	log.Printf("version %s", Version)
 	flag.Parse()
 

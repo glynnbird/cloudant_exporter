@@ -4,7 +4,7 @@ import (
 	"log"
 	"time"
 
-	"cloudant.com/couchmonitor/internal/utils"
+	"cloudant.com/cloudant_exporter/internal/utils"
 	"github.com/IBM/cloudant-go-sdk/cloudantv1"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
@@ -27,7 +27,7 @@ var (
 	)
 
 	// Everything else is a counter-type, even if it's reset to zero somehow,
-    // at least if we are correctly labelling the metric.
+	// at least if we are correctly labelling the metric.
 	docWriteFailuresTotal = utils.AutoNewSettableCounterVec(prometheus.Opts{
 		Name: "cloudant_replication_doc_write_failures_total",
 		Help: "The number of failures writing documents to the target",
