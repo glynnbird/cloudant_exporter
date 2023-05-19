@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"runtime"
 	"time"
 
 	"github.com/IBM/cloudant-go-sdk/cloudantv1"
@@ -14,6 +15,7 @@ import (
 	"cloudant.com/cloudant_exporter/internal/utils"
 )
 
+var AppName = "cloudant_exporter"
 var Version = "development"
 
 var addr = flag.String("listen-address", "127.0.0.1:8080", "The address to listen on for HTTP requests.")
@@ -22,15 +24,16 @@ const failAfter = 5 * time.Minute
 
 // entry point
 func main() {
-	log.Println("Cloudant Prometheus Exporter")
-	log.Printf("version %s", Version)
+	log.Println(AppName)
+	log.Printf("version %s(%s)", Version, runtime.Version())
 	flag.Parse()
 
 	cldt, err := newCloudantClient()
 	if err != nil {
 		log.Fatalf("Could not initialise Cloudant client: %v", err)
 	}
-	cldt.Service.SetUserAgent(fmt.Sprintf("cloudant_exporter/%s", Version))
+	userAgent := fmt.Sprintf("%s/%s(%s)", AppName, Version, runtime.Version())
+	cldt.Service.SetUserAgent(userAgent)
 
 	log.Printf("Using Cloudant: %s", cldt.GetServiceURL())
 
