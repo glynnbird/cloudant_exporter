@@ -1,4 +1,4 @@
-name: Cloudant Explorer Build
+name: Cloudant Exporter Build
 
 on:
   push:

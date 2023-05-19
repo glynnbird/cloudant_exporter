@@ -43,10 +43,10 @@ Assuming you have installed the [IBM Cloud CLI](https://cloud.ibm.com/docs/cli?t
 
 ```sh
 # create a project
-ibmcloud ce project create --name mycloudantexplorerproject
+ibmcloud ce project create --name mycloudantexporterproject
 # create an application within the project
 ibmcloud ce application create \
-  --name mycloudantexplorer \
+  --name mycloudantexporter \
   --image ghcr.io/glynnbird/cloudant_exporter:latest \
   --env "CLOUDANT_URL=$CLOUDANT_URL" \
   --env "CLOUDANT_APIKEY=$CLOUDANT_APIKEY" \
