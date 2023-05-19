@@ -1,4 +1,4 @@
-module cloudant.com/couchmonitor
+module cloudant.com/cloudant_exporter
 
 go 1.19
 

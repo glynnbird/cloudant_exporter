@@ -22,7 +22,7 @@ FROM alpine
 # FROM gcr.io/distroless/static-debian11
 
 # Copy our static executable.
-COPY --from=builder /app/couchmonitor /
+COPY --from=builder /app/cloudant_exporter /
  
 # Specifies the executable command that runs when the container starts
-CMD [ "/couchmonitor", "--listen-address", "0.0.0.0:8080"]
+CMD [ "/cloudant_exporter", "--listen-address", "0.0.0.0:8080"]

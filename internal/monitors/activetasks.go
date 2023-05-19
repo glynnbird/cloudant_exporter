@@ -4,7 +4,7 @@ import (
 	"log"
 	"time"
 
-	"cloudant.com/couchmonitor/internal/utils"
+	"cloudant.com/cloudant_exporter/internal/utils"
 	"github.com/IBM/cloudant-go-sdk/cloudantv1"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"

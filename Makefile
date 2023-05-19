@@ -6,4 +6,4 @@
 VERSION=$(shell git describe --always)
 
 build:
-	go build -ldflags="-X 'main.Version=$(VERSION)'" ./cmd/couchmonitor/
+	go build -ldflags="-X 'main.Version=$(VERSION)'" ./cmd/cloudant_exporter/

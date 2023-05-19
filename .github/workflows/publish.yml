@@ -1,4 +1,4 @@
-name: Demo Push
+name: Cloudant Exporter Build
 
 on:
   push:
@@ -11,7 +11,7 @@ on:
       - v*
 
 env:
-  IMAGE_NAME: couchmonitor
+  IMAGE_NAME: cloudant_exporter
 
 jobs:
   # Push image to GitHub Packages.
