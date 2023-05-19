@@ -2,6 +2,12 @@
 
 In general, this should work as a normal Go application does.
 
+## Installing required tools
+
+In addition to `go` itself, this project uses:
+
+- [`golangci-lint`](https://golangci-lint.run/usage/install/).
+
 ## Version number
 
 In local builds, the version number will usually show up as:

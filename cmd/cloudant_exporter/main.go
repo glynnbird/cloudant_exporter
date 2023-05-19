@@ -70,8 +70,12 @@ func main() {
 	}()
 
 	http.Handle("/metrics", promhttp.Handler())
+	server := &http.Server{
+		Addr:              *addr,
+		ReadHeaderTimeout: 3 * time.Second,
+	}
 	go func() {
-		log.Fatal(http.ListenAndServe(*addr, nil))
+		log.Fatal(server.ListenAndServe())
 	}()
 	log.Printf("HTTP server started on %s", *addr)
 
@@ -126,24 +130,21 @@ type monitorLooper struct {
 func (rc *monitorLooper) Go() {
 	ticker := time.NewTicker(rc.Interval)
 
-	for {
-		select {
-		case <-ticker.C:
-			log.Printf("[%s] tick", rc.Chk.Name())
-			err := rc.Chk.Retrieve()
+	for range ticker.C {
+		log.Printf("[%s] tick", rc.Chk.Name())
+		err := rc.Chk.Retrieve()
 
-			// Exit the monitor if we've not been successful for 20 minutes
-			if err != nil {
-				log.Printf("[%s] error getting tasks: %v; last success: %s", rc.Chk.Name(), err, rc.FailBox.LastSuccess())
-				rc.FailBox.Failure()
-			} else {
-				rc.FailBox.Success()
-			}
+		// Exit the monitor if we've not been successful for 20 minutes
+		if err != nil {
+			log.Printf("[%s] error getting tasks: %v; last success: %s", rc.Chk.Name(), err, rc.FailBox.LastSuccess())
+			rc.FailBox.Failure()
+		} else {
+			rc.FailBox.Success()
+		}
 
-			if rc.FailBox.ShouldExit() {
-				log.Printf("[%s] exiting; >%s since last success at %s", rc.Chk.Name(), failAfter, rc.FailBox.LastSuccess())
-				return
-			}
+		if rc.FailBox.ShouldExit() {
+			log.Printf("[%s] exiting; >%s since last success at %s", rc.Chk.Name(), failAfter, rc.FailBox.LastSuccess())
+			return
 		}
 	}
 }

@@ -24,7 +24,7 @@ func (fb *FailBox) Success() {
 }
 
 func (fb *FailBox) Failure() {
-	if time.Now().Sub(fb.lastSuccess) > fb.failAfter {
+	if time.Since(fb.lastSuccess) > fb.failAfter {
 		fb.tripped = true
 	}
 }
