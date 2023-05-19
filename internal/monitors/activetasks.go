@@ -57,18 +57,17 @@ func (rc *ActiveTasksMonitor) Retrieve() error {
 	}
 
 	for _, d := range activeTaskResult {
-		if *d.Type == "indexer" {
+		switch *d.Type {
+		case "indexer":
 			log.Printf("[ActiveTasksMonitor] indexing ddoc %q db %q: changes %d", *d.DesignDocument, *d.Database, *d.TotalChanges)
 			indexerChangesTotalGauge.WithLabelValues(*d.Node, *d.Pid, *d.Database, *d.DesignDocument).Set(float64(*d.TotalChanges))
 			indexerChangesDoneCounter.WithLabelValues(*d.Node, *d.Pid, *d.Database, *d.DesignDocument).Set(float64(*d.ChangesDone))
-		}
-		if *d.Type == "replication" {
-			// no prometheus output for replication, as that's handled by the ReplicationMonitor
-		}
-		if *d.Type == "database_compaction" {
+		case "database_compaction":
 			log.Printf("[ActiveTasksMonitor] compaction db %q total change %d done %d", *d.Database, *d.TotalChanges, *d.ChangesDone)
 			compactionChangesTotalGauge.WithLabelValues(*d.Node, *d.Pid, *d.Database).Set(float64(*d.TotalChanges))
 			compactionChangesDoneCounter.WithLabelValues(*d.Node, *d.Pid, *d.Database).Set(float64(*d.ChangesDone))
+		default:
+			// no prometheus output for replication, as that's handled by the ReplicationMonitor
 		}
 	}
 

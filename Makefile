@@ -7,3 +7,6 @@ VERSION=$(shell git describe --always)
 
 build:
 	go build -ldflags="-X 'main.Version=$(VERSION)'" ./cmd/cloudant_exporter/
+
+lint:
+	golangci-lint run

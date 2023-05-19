@@ -1,0 +1,13 @@
+linters:
+  disable-all: true
+  enable:
+    # Add gosec
+    - gosec
+    # Defaults per 1.52.2
+    - errcheck
+    - gosimple
+    - govet
+    - ineffassign
+    - staticcheck
+    - typecheck
+    - unused
