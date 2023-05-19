@@ -10,7 +10,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promauto"
 )
 
-type ReplicationMonitor struct {
+type ReplicationProgressMonitor struct {
 	Cldt     *cloudantv1.CloudantV1
 	Interval time.Duration
 	FailBox  *utils.FailBox
@@ -60,11 +60,11 @@ var (
 	)
 )
 
-func (rc *ReplicationMonitor) Name() string {
-	return "ReplicationMonitor"
+func (rc *ReplicationProgressMonitor) Name() string {
+	return "ReplicationProgressMonitor"
 }
 
-func (rc *ReplicationMonitor) Retrieve() error {
+func (rc *ReplicationProgressMonitor) Retrieve() error {
 	// fetch scheduler status
 	getSchedulerDocsOptions := rc.Cldt.NewGetSchedulerDocsOptions()
 	getSchedulerDocsOptions.SetLimit(50)
@@ -75,7 +75,7 @@ func (rc *ReplicationMonitor) Retrieve() error {
 		return err
 	}
 	for _, d := range schedulerDocsResult.Docs {
-		log.Printf("[ReplicationMonitor] Replication %q: docs written %d", *d.DocID, *d.Info.DocsWritten)
+		log.Printf("[ReplicationProgressMonitor] Replication %q: docs written %d", *d.DocID, *d.Info.DocsWritten)
 		if d.Info.ChangesPending != nil {
 			changesPendingTotal.WithLabelValues(*d.DocID).Set(float64(*d.Info.ChangesPending))
 		}
