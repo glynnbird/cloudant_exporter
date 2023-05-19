@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"log"
 	"net/http"
 	"time"
@@ -29,6 +30,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("Could not initialise Cloudant client: %v", err)
 	}
+	cldt.Service.SetUserAgent(fmt.Sprintf("cloudant_exporter/%s", Version))
 
 	log.Printf("Using Cloudant: %s", cldt.GetServiceURL())
 
