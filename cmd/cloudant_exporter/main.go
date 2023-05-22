@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"math/rand"
 	"net/http"
 	"runtime"
 	"time"
@@ -132,6 +133,19 @@ type monitorLooper struct {
 
 func (rc *monitorLooper) Go() {
 	ticker := time.NewTicker(rc.Interval)
+
+	// do the first poll straight after a random pause, and at
+	// regular intervals thereafter
+	offset := rand.Intn(15)
+	time.Sleep(time.Duration(offset * int(time.Second)))
+	log.Printf("[%s] startup tick (+%d s)", rc.Chk.Name(), offset)
+	err := rc.Chk.Retrieve()
+	if err != nil {
+		log.Printf("[%s] error getting tasks: %v; last success: %s", rc.Chk.Name(), err, rc.FailBox.LastSuccess())
+		rc.FailBox.Failure()
+	} else {
+		rc.FailBox.Success()
+	}
 
 	for range ticker.C {
 		log.Printf("[%s] tick", rc.Chk.Name())
