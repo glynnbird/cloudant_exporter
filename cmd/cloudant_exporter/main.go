@@ -132,8 +132,6 @@ type monitorLooper struct {
 }
 
 func (rc *monitorLooper) Go() {
-	ticker := time.NewTicker(rc.Interval)
-
 	// do the first poll straight after a random pause, and at
 	// regular intervals thereafter
 	offset := rand.Intn(15) //nolint:gosec,gomnd // math/rand is good enough for this use-case
@@ -147,6 +145,7 @@ func (rc *monitorLooper) Go() {
 		rc.FailBox.Success()
 	}
 
+	ticker := time.NewTicker(rc.Interval)
 	for range ticker.C {
 		log.Printf("[%s] tick", rc.Chk.Name())
 		err := rc.Chk.Retrieve()
