@@ -136,7 +136,7 @@ func (rc *monitorLooper) Go() {
 
 	// do the first poll straight after a random pause, and at
 	// regular intervals thereafter
-	offset := rand.Intn(15)
+	offset := rand.Intn(15) //nolint:gosec,gomnd // math/rand is good enough for this use-case
 	time.Sleep(time.Duration(offset * int(time.Second)))
 	log.Printf("[%s] startup tick (+%d s)", rc.Chk.Name(), offset)
 	err := rc.Chk.Retrieve()
