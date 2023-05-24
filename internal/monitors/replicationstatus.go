@@ -4,16 +4,13 @@ import (
 	"log"
 	"time"
 
-	"cloudant.com/cloudant_exporter/internal/utils"
 	"github.com/IBM/cloudant-go-sdk/cloudantv1"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 )
 
 type ReplicationStatusMonitor struct {
-	Cldt     *cloudantv1.CloudantV1
-	Interval time.Duration
-	FailBox  *utils.FailBox
+	Cldt *cloudantv1.CloudantV1
 }
 
 var (

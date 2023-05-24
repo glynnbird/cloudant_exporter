@@ -2,7 +2,6 @@ package monitors
 
 import (
 	"log"
-	"time"
 
 	"cloudant.com/cloudant_exporter/internal/utils"
 	"github.com/IBM/cloudant-go-sdk/cloudantv1"
@@ -11,9 +10,7 @@ import (
 )
 
 type ReplicationProgressMonitor struct {
-	Cldt     *cloudantv1.CloudantV1
-	Interval time.Duration
-	FailBox  *utils.FailBox
+	Cldt *cloudantv1.CloudantV1
 }
 
 var (
