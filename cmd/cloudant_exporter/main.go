@@ -46,11 +46,21 @@ func main() {
 	rc := monitorLooper{
 		Interval: 5 * time.Second,
 		FailBox:  utils.NewFailBox(failAfter),
-		Chk:      &monitors.ReplicationMonitor{Cldt: cldt},
+		Chk:      &monitors.ReplicationProgressMonitor{Cldt: cldt},
 	}
 	go func() {
 		rc.Go()
-		monitorFailed <- "ReplicationMonitor"
+		monitorFailed <- "ReplicationProgressMonitor"
+	}()
+
+	rs := monitorLooper{
+		Interval: 10 * time.Minute,
+		FailBox:  utils.NewFailBox(failAfter),
+		Chk:      &monitors.ReplicationStatusMonitor{Cldt: cldt},
+	}
+	go func() {
+		rs.Go()
+		monitorFailed <- "ReplicationStatusMonitor"
 	}()
 
 	tm := monitorLooper{
