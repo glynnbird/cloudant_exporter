@@ -5,7 +5,15 @@
 #    <tag>-<commits since tag>-SHA
 VERSION=$(shell git describe --always)
 
-build:
+all: clean download build
+
+clean:
+	rm -f cloudant_exporter
+
+download:
+	go mod download
+
+build: download
 	go build -ldflags="-X 'main.Version=$(VERSION)'" ./cmd/cloudant_exporter/
 
 lint:
