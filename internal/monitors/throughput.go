@@ -3,49 +3,76 @@ package monitors
 import (
 	"context"
 	"encoding/json"
+	"log"
 
 	"github.com/IBM/cloudant-go-sdk/cloudantv1"
 	"github.com/IBM/cloudant-go-sdk/common"
 	"github.com/IBM/go-sdk-core/v5/core"
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/promauto"
 )
 
-type ThroughputMonitor struct {
-	Cldt *cloudantv1.CloudantV1
-}
-
 var (
-	throughput = promauto.NewGaugeVec(
-		prometheus.GaugeOpts{
-			Name: "cloudant_throughput_current_req_per_second",
-			Help: "Current requests per second per class",
-		},
-		[]string{"class", "ratelimited"},
+	throughputDesc = prometheus.NewDesc(
+		"cloudant_throughput_current_req_per_second",
+		"Current requests per second per class",
+		[]string{"class", "ratelimited"}, nil,
 	)
 )
 
-func (tm *ThroughputMonitor) Name() string {
-	return "ThroughputMonitor"
+type ThroughputCollector struct {
+	Cldt *cloudantv1.CloudantV1
 }
 
-func (tm *ThroughputMonitor) Retrieve() error {
-	tr, err := tm.ccmDiagnostics()
+func (cc ThroughputCollector) Describe(ch chan<- *prometheus.Desc) {
+	prometheus.DescribeByCollect(cc, ch)
+}
+
+func (cc ThroughputCollector) Collect(ch chan<- prometheus.Metric) {
+
+	tr, err := cc.ccmDiagnostics()
 	if err != nil {
-		return err
+		log.Printf("[ThroughputCollector] Error retrieving CCM diagnostics: %v", err)
 	}
 
 	latest := tr.OperationHistory[len(tr.OperationHistory)-1]
-	throughput.WithLabelValues("lookup", "false").Set(float64(latest.Lookup))
-	throughput.WithLabelValues("write", "false").Set(float64(latest.Write))
-	throughput.WithLabelValues("query", "false").Set(float64(latest.Query))
+	ch <- prometheus.MustNewConstMetric(
+		throughputDesc,
+		prometheus.GaugeValue,
+		float64(latest.Lookup),
+		"lookup", "false",
+	)
+	ch <- prometheus.MustNewConstMetric(
+		throughputDesc,
+		prometheus.GaugeValue,
+		float64(latest.Write),
+		"write", "false",
+	)
+	ch <- prometheus.MustNewConstMetric(
+		throughputDesc,
+		prometheus.GaugeValue,
+		float64(latest.Query),
+		"query", "false",
+	)
 
 	latest = tr.Deny429History[len(tr.Deny429History)-1]
-	throughput.WithLabelValues("lookup", "true").Set(float64(latest.Lookup))
-	throughput.WithLabelValues("write", "true").Set(float64(latest.Write))
-	throughput.WithLabelValues("query", "true").Set(float64(latest.Query))
-
-	return nil
+	ch <- prometheus.MustNewConstMetric(
+		throughputDesc,
+		prometheus.GaugeValue,
+		float64(latest.Lookup),
+		"lookup", "true",
+	)
+	ch <- prometheus.MustNewConstMetric(
+		throughputDesc,
+		prometheus.GaugeValue,
+		float64(latest.Write),
+		"write", "true",
+	)
+	ch <- prometheus.MustNewConstMetric(
+		throughputDesc,
+		prometheus.GaugeValue,
+		float64(latest.Query),
+		"query", "true",
+	)
 }
 
 type ThroughputRecord struct {
@@ -65,7 +92,7 @@ type ThroughputResponse struct {
 	OperationHistory []ThroughputRecord
 }
 
-func (tm *ThroughputMonitor) ccmDiagnostics() (*ThroughputResponse, error) {
+func (tm *ThroughputCollector) ccmDiagnostics() (*ThroughputResponse, error) {
 	builder := core.NewRequestBuilder(core.GET)
 	builder = builder.WithContext(context.Background())
 	builder.EnableGzipCompression = tm.Cldt.GetEnableGzipCompression()

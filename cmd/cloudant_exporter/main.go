@@ -41,6 +41,7 @@ func main() {
 
 	prometheus.MustRegister(
 		monitors.ReplicationProgressCollector{Cldt: cldt},
+		monitors.ThroughputCollector{Cldt: cldt},
 	)
 
 	// Monitors publish to this channel if they fail,
@@ -56,16 +57,6 @@ func main() {
 	go func() {
 		rs.Go()
 		monitorFailed <- "ReplicationStatusMonitor"
-	}()
-
-	tm := monitorLooper{
-		Interval: 5 * time.Second,
-		FailBox:  utils.NewFailBox(failAfter),
-		Chk:      &monitors.ThroughputMonitor{Cldt: cldt},
-	}
-	go func() {
-		tm.Go()
-		monitorFailed <- "ThroughputMonitor"
 	}()
 
 	atm := monitorLooper{
