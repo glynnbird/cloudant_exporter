@@ -55,31 +55,28 @@ func (cc ReplicationStatusCollector) Start() {
 
 	ticker := time.NewTicker(10 * time.Minute)
 	defer ticker.Stop()
-	for {
-		select {
-		case <-ticker.C:
-			// repeat until we get a smaller batch than we asked for
-			for {
-				// fetch scheduler jobs
-				getSchedulerDocsOptions.SetSkip(int64(skip))
+	for range ticker.C {
+		// repeat until we get a smaller batch than we asked for
+		for {
+			// fetch scheduler jobs
+			getSchedulerDocsOptions.SetSkip(int64(skip))
 
-				schedulerJobsResult, _, err := cc.Cldt.GetSchedulerDocs(getSchedulerDocsOptions)
-				cloudantExporterHttpRequestTotal.WithLabelValues("replication_status").Inc()
-				if err != nil {
-					log.Printf("[ReplicationStatusCollector] Error retrieving replication status: %v", err)
-					cloudantExporterHttpRequestErrorTotal.WithLabelValues("replication_status").Inc()
-					break
-				}
-				for _, d := range schedulerJobsResult.Docs {
-					cc.statusCounts[*d.State]++
-				}
-				skip += len(schedulerJobsResult.Docs)
-				iterations++
-				if len(schedulerJobsResult.Docs) < batchSize || iterations == 10 {
-					break
-				} else {
-					time.Sleep(5 * time.Second)
-				}
+			schedulerJobsResult, _, err := cc.Cldt.GetSchedulerDocs(getSchedulerDocsOptions)
+			cloudantExporterHttpRequestTotal.WithLabelValues("replication_status").Inc()
+			if err != nil {
+				log.Printf("[ReplicationStatusCollector] Error retrieving replication status: %v", err)
+				cloudantExporterHttpRequestErrorTotal.WithLabelValues("replication_status").Inc()
+				break
+			}
+			for _, d := range schedulerJobsResult.Docs {
+				cc.statusCounts[*d.State]++
+			}
+			skip += len(schedulerJobsResult.Docs)
+			iterations++
+			if len(schedulerJobsResult.Docs) < batchSize || iterations == 10 {
+				break
+			} else {
+				time.Sleep(5 * time.Second)
 			}
 		}
 	}
