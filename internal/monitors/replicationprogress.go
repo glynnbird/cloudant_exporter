@@ -72,6 +72,9 @@ func (rc *ReplicationProgressMonitor) Retrieve() error {
 		return err
 	}
 	for _, d := range schedulerDocsResult.Docs {
+		if d.DocID == nil || d.Info == nil {
+			continue
+		}
 		log.Printf("[ReplicationProgressMonitor] Replication %q: docs written %d", *d.DocID, *d.Info.DocsWritten)
 		if d.Info.ChangesPending != nil {
 			changesPendingTotal.WithLabelValues(*d.DocID).Set(float64(*d.Info.ChangesPending))
