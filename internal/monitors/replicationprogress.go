@@ -3,10 +3,8 @@ package monitors
 import (
 	"log"
 
-	"cloudant.com/cloudant_exporter/internal/utils"
 	"github.com/IBM/cloudant-go-sdk/cloudantv1"
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/promauto"
 )
 
 type ReplicationProgressMonitor struct {
@@ -16,74 +14,102 @@ type ReplicationProgressMonitor struct {
 var (
 	// Changes pending mostly goes down, but can go up if the replication
 	// begins to fall behind. It's definitely a gauge.
-	changesPendingTotal = promauto.NewGaugeVec(prometheus.GaugeOpts{
-		Name: "cloudant_replication_changes_pending_total",
-		Help: "The number of changes remaining to process (approximately)",
-	},
-		[]string{"docid"},
+	changesPendingTotalDesc = prometheus.NewDesc(
+		"cloudant_replication_changes_pending_total",
+		"The number of changes remaining to process (approximately)",
+		[]string{"docid"}, nil,
 	)
 
 	// Everything else is a counter-type, even if it's reset to zero somehow,
 	// at least if we are correctly labelling the metric.
-	docWriteFailuresTotal = utils.AutoNewSettableCounterVec(prometheus.Opts{
-		Name: "cloudant_replication_doc_write_failures_total",
-		Help: "The number of failures writing documents to the target",
-	},
-		[]string{"docid"},
+	docsReadTotalDesc = prometheus.NewDesc(
+		"cloudant_replication_docs_read_total",
+		"Total number of documents read from the source database",
+		[]string{"docid"}, nil,
 	)
-	docsReadTotal = utils.AutoNewSettableCounterVec(prometheus.Opts{
-		Name: "cloudant_replication_docs_read_total",
-		Help: "Total number of documents read from the source database",
-	},
-		[]string{"docid"},
+	docsWrittenTotalDesc = prometheus.NewDesc(
+		"cloudant_replication_docs_written_total",
+		"Total number of documents written to the target database",
+		[]string{"docid"}, nil,
 	)
-	docsWrittenTotal = utils.AutoNewSettableCounterVec(prometheus.Opts{
-		Name: "cloudant_replication_docs_written_total",
-		Help: "Total number of documents written to the target database",
-	},
-		[]string{"docid"},
+	docWriteFailuresTotalDesc = prometheus.NewDesc(
+		"cloudant_replication_doc_write_failures_total",
+		"The number of failures writing documents to the target",
+		[]string{"docid"}, nil,
 	)
-	missingRevsFoundTotal = utils.AutoNewSettableCounterVec(prometheus.Opts{
-		Name: "cloudant_replication_missing_revs_found_total",
-		Help: "Total number of revs found so far on the source that are not at the target",
-	},
-		[]string{"docid"},
+	missingRevsFoundTotalDesc = prometheus.NewDesc(
+		"cloudant_replication_missing_revs_found_total",
+		"Total number of revs found so far on the source that are not at the target",
+		[]string{"docid"}, nil,
 	)
-	revsCheckedTotal = utils.AutoNewSettableCounterVec(prometheus.Opts{
-		Name: "cloudant_replication_revs_checked_total",
-		Help: "Total number of revs processed on the source",
-	},
-		[]string{"docid"},
+	revsCheckedTotalDesc = prometheus.NewDesc(
+		"cloudant_replication_revs_checked_total",
+		"Total number of revs processed on the source",
+		[]string{"docid"}, nil,
 	)
 )
 
-func (rc *ReplicationProgressMonitor) Name() string {
-	return "ReplicationProgressMonitor"
+type ReplicationProgressCollector struct {
+	Cldt *cloudantv1.CloudantV1
 }
 
-func (rc *ReplicationProgressMonitor) Retrieve() error {
+func (cc ReplicationProgressCollector) Describe(ch chan<- *prometheus.Desc) {
+	prometheus.DescribeByCollect(cc, ch)
+}
+
+func (cc ReplicationProgressCollector) Collect(ch chan<- prometheus.Metric) {
 	// fetch scheduler status
-	getSchedulerDocsOptions := rc.Cldt.NewGetSchedulerDocsOptions()
+	getSchedulerDocsOptions := cc.Cldt.NewGetSchedulerDocsOptions()
 	getSchedulerDocsOptions.SetLimit(50)
 	getSchedulerDocsOptions.SetStates([]string{"running"})
 
-	schedulerDocsResult, _, err := rc.Cldt.GetSchedulerDocs(getSchedulerDocsOptions)
+	schedulerDocsResult, _, err := cc.Cldt.GetSchedulerDocs(getSchedulerDocsOptions)
 	if err != nil {
-		return err
+		return
 	}
 	for _, d := range schedulerDocsResult.Docs {
 		if d.DocID == nil || d.Info == nil {
 			continue
 		}
 		log.Printf("[ReplicationProgressMonitor] Replication %q: docs written %d", *d.DocID, *d.Info.DocsWritten)
+
 		if d.Info.ChangesPending != nil {
-			changesPendingTotal.WithLabelValues(*d.DocID).Set(float64(*d.Info.ChangesPending))
+			ch <- prometheus.MustNewConstMetric(
+				changesPendingTotalDesc,
+				prometheus.GaugeValue,
+				float64(*d.Info.ChangesPending),
+				*d.DocID,
+			)
 		}
-		docWriteFailuresTotal.WithLabelValues(*d.DocID).Set(float64(*d.Info.DocWriteFailures))
-		docsReadTotal.WithLabelValues(*d.DocID).Set(float64(*d.Info.DocsRead))
-		docsWrittenTotal.WithLabelValues(*d.DocID).Set(float64(*d.Info.DocsWritten))
-		missingRevsFoundTotal.WithLabelValues(*d.DocID).Set(float64(*d.Info.MissingRevisionsFound))
-		revsCheckedTotal.WithLabelValues(*d.DocID).Set(float64(*d.Info.RevisionsChecked))
+		ch <- prometheus.MustNewConstMetric(
+			docWriteFailuresTotalDesc,
+			prometheus.CounterValue,
+			float64(*d.Info.DocWriteFailures),
+			*d.DocID,
+		)
+		ch <- prometheus.MustNewConstMetric(
+			docsReadTotalDesc,
+			prometheus.CounterValue,
+			float64(*d.Info.DocsRead),
+			*d.DocID,
+		)
+		ch <- prometheus.MustNewConstMetric(
+			docsWrittenTotalDesc,
+			prometheus.CounterValue,
+			float64(*d.Info.DocsWritten),
+			*d.DocID,
+		)
+		ch <- prometheus.MustNewConstMetric(
+			missingRevsFoundTotalDesc,
+			prometheus.CounterValue,
+			float64(*d.Info.MissingRevisionsFound),
+			*d.DocID,
+		)
+		ch <- prometheus.MustNewConstMetric(
+			revsCheckedTotalDesc,
+			prometheus.CounterValue,
+			float64(*d.Info.RevisionsChecked),
+			*d.DocID,
+		)
 	}
-	return nil
 }

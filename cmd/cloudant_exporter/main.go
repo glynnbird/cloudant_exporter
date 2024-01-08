@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/IBM/cloudant-go-sdk/cloudantv1"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 
 	"cloudant.com/cloudant_exporter/internal/monitors"
@@ -38,20 +39,14 @@ func main() {
 
 	log.Printf("Using Cloudant: %s", cldt.GetServiceURL())
 
+	prometheus.MustRegister(
+		monitors.ReplicationProgressCollector{Cldt: cldt},
+	)
+
 	// Monitors publish to this channel if they fail,
 	// typically that they haven't made a successful
 	// request in `failAfter` time.
 	monitorFailed := make(chan string)
-
-	rc := monitorLooper{
-		Interval: 5 * time.Second,
-		FailBox:  utils.NewFailBox(failAfter),
-		Chk:      &monitors.ReplicationProgressMonitor{Cldt: cldt},
-	}
-	go func() {
-		rc.Go()
-		monitorFailed <- "ReplicationProgressMonitor"
-	}()
 
 	rs := monitorLooper{
 		Interval: 10 * time.Minute,
