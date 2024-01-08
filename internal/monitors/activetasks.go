@@ -3,10 +3,8 @@ package monitors
 import (
 	"log"
 
-	"cloudant.com/cloudant_exporter/internal/utils"
 	"github.com/IBM/cloudant-go-sdk/cloudantv1"
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/promauto"
 )
 
 type ActiveTasksMonitor struct {
@@ -14,59 +12,77 @@ type ActiveTasksMonitor struct {
 }
 
 var (
-	indexerChangesTotalGauge = promauto.NewGaugeVec(prometheus.GaugeOpts{
-		Name: "cloudant_indexing_changes_total_documents",
-		Help: "The total number of changes to index",
-	},
-		[]string{"node", "pid", "database", "design_document"},
+	indexerChangesTotalGaugeDesc = prometheus.NewDesc(
+		"cloudant_indexing_changes_total_documents",
+		"The total number of changes to index",
+		[]string{"node", "pid", "database", "design_document"}, nil,
 	)
-	indexerChangesDoneCounter = utils.AutoNewSettableCounterVec(prometheus.Opts{
-		Name: "cloudant_indexing_changes_done_total",
-		Help: "The total number of revisions processed by this indexer",
-	},
-		[]string{"node", "pid", "database", "design_document"},
+	indexerChangesDoneCounterDesc = prometheus.NewDesc(
+		"cloudant_indexing_changes_done_total",
+		"The total number of revisions processed by this indexer",
+		[]string{"node", "pid", "database", "design_document"}, nil,
 	)
-	compactionChangesTotalGauge = promauto.NewGaugeVec(prometheus.GaugeOpts{
-		Name: "cloudant_compaction_changes_total_documents",
-		Help: "The number of documents to compact",
-	},
-		[]string{"node", "pid", "database"},
+	compactionChangesTotalGaugeDesc = prometheus.NewDesc(
+		"cloudant_compaction_changes_total_documents",
+		"The number of documents to compact",
+		[]string{"node", "pid", "database"}, nil,
 	)
-	compactionChangesDoneCounter = utils.AutoNewSettableCounterVec(prometheus.Opts{
-		Name: "cloudant_compaction_changes_done_total",
-		Help: "The total number of documents compacted by this compaction",
-	},
-		[]string{"node", "pid", "database"},
+	compactionChangesDoneCounterDesc = prometheus.NewDesc(
+		"cloudant_compaction_changes_done_total",
+		"The total number of documents compacted by this compaction",
+		[]string{"node", "pid", "database"}, nil,
 	)
 )
 
-func (rc *ActiveTasksMonitor) Name() string {
-	return "ActiveTasksMonitor"
+type ActiveTasksCollector struct {
+	Cldt *cloudantv1.CloudantV1
 }
 
-func (rc *ActiveTasksMonitor) Retrieve() error {
+func (cc ActiveTasksCollector) Describe(ch chan<- *prometheus.Desc) {
+	prometheus.DescribeByCollect(cc, ch)
+}
+
+func (rc ActiveTasksCollector) Collect(ch chan<- prometheus.Metric) {
 	// fetch active tasks
 	getActiveTasksOptions := rc.Cldt.NewGetActiveTasksOptions()
 	activeTaskResult, _, err := rc.Cldt.GetActiveTasks(getActiveTasksOptions)
 
 	if err != nil {
-		return err
+		log.Printf("[ActiveTasksCollector] Error retrieving active tasks: %v", err)
 	}
 
 	for _, d := range activeTaskResult {
 		switch *d.Type {
 		case "indexer":
 			log.Printf("[ActiveTasksMonitor] indexing ddoc %q db %q: changes %d", *d.DesignDocument, *d.Database, *d.TotalChanges)
-			indexerChangesTotalGauge.WithLabelValues(*d.Node, *d.Pid, *d.Database, *d.DesignDocument).Set(float64(*d.TotalChanges))
-			indexerChangesDoneCounter.WithLabelValues(*d.Node, *d.Pid, *d.Database, *d.DesignDocument).Set(float64(*d.ChangesDone))
+			ch <- prometheus.MustNewConstMetric(
+				indexerChangesTotalGaugeDesc,
+				prometheus.GaugeValue,
+				float64(*d.TotalChanges),
+				*d.Node, *d.Pid, *d.Database, *d.DesignDocument,
+			)
+			ch <- prometheus.MustNewConstMetric(
+				indexerChangesDoneCounterDesc,
+				prometheus.CounterValue,
+				float64(*d.ChangesDone),
+				*d.Node, *d.Pid, *d.Database, *d.DesignDocument,
+			)
 		case "database_compaction":
 			log.Printf("[ActiveTasksMonitor] compaction db %q total change %d done %d", *d.Database, *d.TotalChanges, *d.ChangesDone)
-			compactionChangesTotalGauge.WithLabelValues(*d.Node, *d.Pid, *d.Database).Set(float64(*d.TotalChanges))
-			compactionChangesDoneCounter.WithLabelValues(*d.Node, *d.Pid, *d.Database).Set(float64(*d.ChangesDone))
+			ch <- prometheus.MustNewConstMetric(
+				compactionChangesTotalGaugeDesc,
+				prometheus.GaugeValue,
+				float64(*d.TotalChanges),
+				*d.Node, *d.Pid, *d.Database, *d.DesignDocument,
+			)
+			ch <- prometheus.MustNewConstMetric(
+				compactionChangesDoneCounterDesc,
+				prometheus.CounterValue,
+				float64(*d.ChangesDone),
+				*d.Node, *d.Pid, *d.Database, *d.DesignDocument,
+			)
 		default:
 			// no prometheus output for replication, as that's handled by the ReplicationMonitor
 		}
 	}
-
-	return nil
 }
