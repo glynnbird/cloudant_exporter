@@ -39,41 +39,23 @@ func main() {
 
 	log.Printf("Using Cloudant: %s", cldt.GetServiceURL())
 
+	// Register all collectors ready to collect data
+	rsc := monitors.NewReplicationStatusCollector(cldt)
+	go func() { rsc.Start() }()
 	prometheus.MustRegister(
 		monitors.ReplicationProgressCollector{Cldt: cldt},
 		monitors.ThroughputCollector{Cldt: cldt},
 		monitors.ActiveTasksCollector{Cldt: cldt},
+		rsc,
 	)
-
-	// Monitors publish to this channel if they fail,
-	// typically that they haven't made a successful
-	// request in `failAfter` time.
-	monitorFailed := make(chan string)
-
-	rs := monitorLooper{
-		Interval: 10 * time.Minute,
-		FailBox:  utils.NewFailBox(failAfter),
-		Chk:      &monitors.ReplicationStatusMonitor{Cldt: cldt},
-	}
-	go func() {
-		rs.Go()
-		monitorFailed <- "ReplicationStatusMonitor"
-	}()
 
 	http.Handle("/metrics", promhttp.Handler())
 	server := &http.Server{
 		Addr:              *addr,
 		ReadHeaderTimeout: 3 * time.Second,
 	}
-	go func() {
-		log.Fatal(server.ListenAndServe())
-	}()
-	log.Printf("HTTP server started on %s", *addr)
-
-	// After a monitor fails, we need to shutdown.
-	m := <-monitorFailed
-	log.Printf("A monitor died: %q! Exiting.", m)
-	// exiting main kills everything
+	log.Printf("HTTP server starting on %s", *addr)
+	log.Fatal(server.ListenAndServe())
 }
 
 // newCloudantClient creates a new client for Cloudant, configured
