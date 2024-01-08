@@ -30,8 +30,11 @@ func (cc ThroughputCollector) Describe(ch chan<- *prometheus.Desc) {
 func (cc ThroughputCollector) Collect(ch chan<- prometheus.Metric) {
 
 	tr, err := cc.ccmDiagnostics()
+	cloudantExporterHttpRequestTotal.WithLabelValues("throughput").Inc()
 	if err != nil {
 		log.Printf("[ThroughputCollector] Error retrieving CCM diagnostics: %v", err)
+		cloudantExporterHttpRequestErrorTotal.WithLabelValues("throughput").Inc()
+		return
 	}
 
 	latest := tr.OperationHistory[len(tr.OperationHistory)-1]

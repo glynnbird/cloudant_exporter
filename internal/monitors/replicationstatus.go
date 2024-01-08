@@ -64,8 +64,11 @@ func (cc ReplicationStatusCollector) Start() {
 				getSchedulerDocsOptions.SetSkip(int64(skip))
 
 				schedulerJobsResult, _, err := cc.Cldt.GetSchedulerDocs(getSchedulerDocsOptions)
+				cloudantExporterHttpRequestTotal.WithLabelValues("replication_status").Inc()
 				if err != nil {
 					log.Printf("[ReplicationStatusCollector] Error retrieving replication status: %v", err)
+					cloudantExporterHttpRequestErrorTotal.WithLabelValues("replication_status").Inc()
+					break
 				}
 				for _, d := range schedulerJobsResult.Docs {
 					cc.statusCounts[*d.State]++

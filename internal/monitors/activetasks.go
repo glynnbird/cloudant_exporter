@@ -46,9 +46,12 @@ func (rc ActiveTasksCollector) Collect(ch chan<- prometheus.Metric) {
 	// fetch active tasks
 	getActiveTasksOptions := rc.Cldt.NewGetActiveTasksOptions()
 	activeTaskResult, _, err := rc.Cldt.GetActiveTasks(getActiveTasksOptions)
+	cloudantExporterHttpRequestTotal.WithLabelValues("active_tasks").Inc()
 
 	if err != nil {
 		log.Printf("[ActiveTasksCollector] Error retrieving active tasks: %v", err)
+		cloudantExporterHttpRequestErrorTotal.WithLabelValues("active_tasks").Inc()
+		return
 	}
 
 	for _, d := range activeTaskResult {

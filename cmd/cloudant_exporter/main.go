@@ -4,7 +4,6 @@ import (
 	"flag"
 	"fmt"
 	"log"
-	"math/rand"
 	"net/http"
 	"runtime"
 	"time"
@@ -14,15 +13,12 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 
 	"cloudant.com/cloudant_exporter/internal/monitors"
-	"cloudant.com/cloudant_exporter/internal/utils"
 )
 
 var AppName = "cloudant_exporter"
 var Version = "development"
 
 var addr = flag.String("listen-address", "127.0.0.1:8080", "The address to listen on for HTTP requests.")
-
-const failAfter = 5 * time.Minute
 
 // entry point
 func main() {
@@ -85,51 +81,4 @@ func newCloudantClient() (*cloudantv1.CloudantV1, error) {
 	service.EnableRetries(3, 30*time.Second)
 
 	return service, nil
-}
-
-type monitor interface {
-	Retrieve() error
-	Name() string
-}
-
-// monitorLooper runs Chk every Interval, using FailBox to decide when to give up and exit
-// on receiving errors.
-type monitorLooper struct {
-	Interval time.Duration
-	FailBox  *utils.FailBox
-	Chk      monitor
-}
-
-func (rc *monitorLooper) Go() {
-	// do the first poll straight after a random pause, and at
-	// regular intervals thereafter
-	offset := rand.Intn(15) //nolint:gosec,gomnd // math/rand is good enough for this use-case
-	time.Sleep(time.Duration(offset * int(time.Second)))
-	log.Printf("[%s] startup tick (+%d s)", rc.Chk.Name(), offset)
-	err := rc.Chk.Retrieve()
-	if err != nil {
-		log.Printf("[%s] error getting tasks: %v; last success: %s", rc.Chk.Name(), err, rc.FailBox.LastSuccess())
-		rc.FailBox.Failure()
-	} else {
-		rc.FailBox.Success()
-	}
-
-	ticker := time.NewTicker(rc.Interval)
-	for range ticker.C {
-		log.Printf("[%s] tick", rc.Chk.Name())
-		err := rc.Chk.Retrieve()
-
-		// Exit the monitor if we've not been successful for 20 minutes
-		if err != nil {
-			log.Printf("[%s] error getting tasks: %v; last success: %s", rc.Chk.Name(), err, rc.FailBox.LastSuccess())
-			rc.FailBox.Failure()
-		} else {
-			rc.FailBox.Success()
-		}
-
-		if rc.FailBox.ShouldExit() {
-			log.Printf("[%s] exiting; >%s since last success at %s", rc.Chk.Name(), failAfter, rc.FailBox.LastSuccess())
-			return
-		}
-	}
 }

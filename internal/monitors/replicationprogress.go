@@ -64,7 +64,10 @@ func (cc ReplicationProgressCollector) Collect(ch chan<- prometheus.Metric) {
 	getSchedulerDocsOptions.SetStates([]string{"running"})
 
 	schedulerDocsResult, _, err := cc.Cldt.GetSchedulerDocs(getSchedulerDocsOptions)
+	cloudantExporterHttpRequestTotal.WithLabelValues("replication_progress").Inc()
 	if err != nil {
+		log.Printf("[ReplicationProgressCollector] Error retrieving replication progress: %v", err)
+		cloudantExporterHttpRequestErrorTotal.WithLabelValues("replication_progress").Inc()
 		return
 	}
 	for _, d := range schedulerDocsResult.Docs {
