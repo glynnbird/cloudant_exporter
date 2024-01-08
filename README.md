@@ -1,11 +1,14 @@
 # Cloudant Prometheus Exporter
 
-A simple Cloudant Prometheus client that polls a Cloudant account for information
-and publishes them in a Prometheus-consumable format on a `/metrics` endpoint.
+A simple Cloudant Prometheus client that polls a Cloudant account for
+information and publishes them in a Prometheus-consumable format on a `/metrics`
+endpoint.
 
 ## Configuring
 
-Expects environment variables to be supplied according to [this documentation](https://cloud.ibm.com/apidocs/cloudant?code=go#authentication-with-external-configuration). e.g.
+Expects environment variables to be supplied according to
+[this documentation](https://cloud.ibm.com/apidocs/cloudant?code=go#authentication-with-external-configuration).
+e.g.
 
 ```sh
 export CLOUDANT_URL="https://myservice.cloudant.com"
@@ -21,12 +24,14 @@ go run ./cmd/cloudant_exporter
 ## Running in Docker
 
 First we turn this repo into a Docker image:
+
 ```sh
 # build a docker image
 docker build -t cloudant_exporter .
 ```
 
-Then we can can spin up a container, exposing its port `8080` to our port `8080`:
+Then we can can spin up a container, exposing its port `8080` to our port
+`8080`:
 
 ```sh
 # run it with credentials as environment variables
@@ -39,7 +44,11 @@ docker run \
 
 ## Running in IBM Code Engine
 
-Assuming you have installed the [IBM Cloud CLI](https://cloud.ibm.com/docs/cli?topic=cli-install-ibmcloud-cli) and the [IBM Code Engine CLI plugin](https://cloud.ibm.com/docs/codeengine?topic=codeengine-cli), you can deploy `cloudant_exporter` into IBM Code Engine using the command line:
+Assuming you have installed the
+[IBM Cloud CLI](https://cloud.ibm.com/docs/cli?topic=cli-install-ibmcloud-cli)
+and the
+[IBM Code Engine CLI plugin](https://cloud.ibm.com/docs/codeengine?topic=codeengine-cli),
+you can deploy `cloudant_exporter` into IBM Code Engine using the command line:
 
 ```sh
 # create a project
@@ -55,7 +64,8 @@ ibmcloud ce application create \
 
 ## Running Prometheus locally
 
-[Download Prometheus](https://prometheus.io/docs/prometheus/latest/getting_started/#downloading-and-running-prometheus) or run `brew install prometheus` on a Mac.
+[Download Prometheus](https://prometheus.io/docs/prometheus/latest/getting_started/#downloading-and-running-prometheus)
+or run `brew install prometheus` on a Mac.
 
 Create a `prometheus.yml` file containing:
 
@@ -67,14 +77,13 @@ global:
 
 scrape_configs:
   - job_name: 'cloudant'
-
-    scrape_interval: 5s
-
+    scrape_interval: 1m
     static_configs:
       - targets: ['localhost:8080']
 ```
 
-where `localhost:8080` is the domain and port of your `cloudant_exporter` application.
+where `localhost:8080` is the domain and port of your `cloudant_exporter`
+application.
 
 Run Prometheus with:
 
