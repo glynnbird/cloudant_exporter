@@ -4,6 +4,8 @@ A simple Cloudant Prometheus client that polls a Cloudant account for
 information and publishes them in a Prometheus-consumable format on a `/metrics`
 endpoint.
 
+![](./images/grafana-dashboard.png)
+
 ## Configuring
 
 Expects environment variables to be supplied according to
