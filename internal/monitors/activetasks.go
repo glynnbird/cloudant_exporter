@@ -76,13 +76,13 @@ func (rc ActiveTasksCollector) Collect(ch chan<- prometheus.Metric) {
 				compactionChangesTotalGaugeDesc,
 				prometheus.GaugeValue,
 				float64(*d.TotalChanges),
-				*d.Node, *d.Pid, *d.Database, *d.DesignDocument,
+				*d.Node, *d.Pid, *d.Database,
 			)
 			ch <- prometheus.MustNewConstMetric(
 				compactionChangesDoneCounterDesc,
 				prometheus.CounterValue,
 				float64(*d.ChangesDone),
-				*d.Node, *d.Pid, *d.Database, *d.DesignDocument,
+				*d.Node, *d.Pid, *d.Database,
 			)
 		default:
 			// no prometheus output for replication, as that's handled by the ReplicationMonitor
