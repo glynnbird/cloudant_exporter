@@ -92,3 +92,5 @@ Run Prometheus with:
 ```sh
 prometheus --config.file=prometheus.yml
 ```
+
+Prometheus's web interface runs on port `9090` by default, so visit http://localhost:9090 in a web browser after starting Prometheus.
