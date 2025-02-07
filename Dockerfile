@@ -1,5 +1,5 @@
 # Specifies a parent image
-FROM golang:1.22.3 AS builder
+FROM golang:1.23.6 AS builder
  
 # Creates an app directory to hold your app’s source code
 WORKDIR /app
