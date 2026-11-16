@@ -23,8 +23,10 @@ jobs:
       contents: read
 
     steps:
+      - uses: actions/setup-go@v6
+        with:
+          go-version: stable
       - uses: actions/checkout@v7
-
       - name: Build image
         run: docker build . --file Dockerfile --tag $IMAGE_NAME --label "runnumber=${GITHUB_RUN_ID}"
 
