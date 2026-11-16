@@ -47,8 +47,8 @@ func NewReplicationStatusCollector(cldt *cloudantv1.CloudantV1) *ReplicationStat
 
 // Start starts a ticker loop that runs forever to gather the metrics
 func (cc ReplicationStatusCollector) Start() {
-	var skip int = 0
-	var batchSize int = 100
+	var skip = 0
+	var batchSize = 100
 	var iterations = 0
 	getSchedulerDocsOptions := cc.Cldt.NewGetSchedulerDocsOptions()
 	getSchedulerDocsOptions.SetLimit(int64(batchSize))
